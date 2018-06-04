@@ -1,3 +1,4 @@
+#include <atomic>
 #include <ctime>
 #include <random>
 #include <unordered_map>
@@ -15,8 +16,8 @@ private:
 	std::array<int, 128> values;
 
 public:
-	static unsigned long long int timesum;
-	static unsigned int timecounter;
+	static std::atomic<unsigned long long int> timesum;
+	static std::atomic<unsigned int> timecounter;
 
 	Bot();
 	//Bot(const Board& start_situation);

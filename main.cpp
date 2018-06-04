@@ -50,9 +50,7 @@ int main(int argc, char const *argv[]) {
 	std::random_device dev;
 	std::mt19937 gen(dev());
 	Tournament first;
-	std::cout << first;
 	first.addContestant(initBot);
-	std::cout << first;
 	for (auto i = 1; i < 4; ++i) {
 		if (!first.addContestant({initBot, 0.1, gen})) {
 			--i;

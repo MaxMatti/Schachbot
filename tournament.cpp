@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <iostream>
+#include <list>
+#include <thread>
 #include "tournament.hpp"
 
 Tournament::Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator) : contestants(previous.contestants) {
@@ -23,10 +25,16 @@ bool Tournament::addContestant(const Bot& newContestant) {
 }
 
 void Tournament::evaluate(const bool loud) {
+	std::list<std::thread> games;
 	for (auto it = this->contestants.begin(); it != this->contestants.end(); ++it) {
 		for (auto jt = this->contestants.begin(); jt != this->contestants.end(); ++jt) {
 			if (it != jt) {
-				this->playGame(it, jt, true, loud);
+				if (games.size() >= std::thread::hardware_concurrency() - 1) {
+					games.begin()->join();
+					games.pop_front();
+				}
+				games.emplace_back(&Tournament::playGame, this, it, jt, true, loud);
+				//this->playGame(it, jt, true, loud);
 			} else if (loud) {
 				std::cout << "-";
 			}
@@ -35,6 +43,10 @@ void Tournament::evaluate(const bool loud) {
 			std::cout << "\n";
 			flush(std::cout);
 		}
+	}
+	while (games.size() > 0) {
+		games.begin()->join();
+		games.pop_front();
 	}
 }
 
@@ -45,12 +57,11 @@ void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std:
 	board_history.emplace_back();
 	current_situation = board_history.rbegin();
 	Move current_move;
-	int tmp;
+	unsigned long long int timesum_step;
 	while (true) {
-		Bot::timesum = 0;
-		Bot::timecounter = 0;
-		for (int i = 0; i < 100 && Bot::timesum / CLOCKS_PER_SEC < 0.01; ++i) {
-			std::tie(current_move, tmp) = std::get<0>(*bot1).getQuickMove(*current_situation, i);
+		timesum_step = Bot::timesum;
+		for (int i = 0; i < 100 && (Bot::timesum - timesum_step) / CLOCKS_PER_SEC < 0.01; ++i) {
+			std::tie(current_move, std::ignore) = std::get<0>(*bot1).getQuickMove(*current_situation, i);
 		}
 		new_situation = current_situation->applyMove(current_move, true);
 		if (!new_situation.isValid()) {
@@ -73,10 +84,9 @@ void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std:
 		}
 		board_history.push_back(new_situation);
 		current_situation = board_history.rbegin();
-		Bot::timesum = 0;
-		Bot::timecounter = 0;
-		for (int i = 0; i < 100 && Bot::timesum / CLOCKS_PER_SEC < 0.01; ++i) {
-			std::tie(current_move, tmp) = std::get<0>(*bot2).getQuickMove(*current_situation, i);
+		timesum_step = Bot::timesum;
+		for (int i = 0; i < 100 && (Bot::timesum - timesum_step) / CLOCKS_PER_SEC < 0.01; ++i) {
+			std::tie(current_move, std::ignore) = std::get<0>(*bot2).getQuickMove(*current_situation, i);
 		}
 		new_situation = current_situation->applyMove(current_move, true);
 		if (!new_situation.isValid()) {

@@ -7,8 +7,8 @@
 #include "bot.hpp"
 #include "move.hpp"
 
-unsigned long long int Bot::timesum = 1;
-unsigned int Bot::timecounter = 1;
+std::atomic<unsigned long long int> Bot::timesum = 1;
+std::atomic<unsigned int> Bot::timecounter = 1;
 
 Bot::Bot() {
 	this->values[OwnKing] = 127;
@@ -82,60 +82,7 @@ std::tuple<Move, int> Bot::getQuickMove(const Board& situation, const unsigned i
 		return std::make_tuple(bestMove, bestScore);
 	}
 }
-/*
-Move Bot::getMove(const Board& situation, unsigned int depth) {
-	if (this->assessments.count(situation) && std::get<1>(this->assessments.at(situation)) >= depth) {
-		return std::get<0>(this->assessments.at(situation));
-	}
-	if (depth == 0) {
-		return this->getMove(situation);
-	} else {
-		std::vector<Move> possibleMoves = situation.getValidMoves();
-		for (auto move : possibleMoves) {
-			this->getMove(situation.applyMove(move, true), depth - 1);
-		}
-		Move result = *std::max_element(possibleMoves.begin(), possibleMoves.end(), [&](const Move& a, const Move& b) {
-			return std::get<2>(this->assessments.at(situation.applyMove(a, true))) > std::get<2>(this->assessments.at(situation.applyMove(b, true)));
-		});
-		this->assessments[situation] = {result, depth, this->getAssessment(situation.applyMove(result, false))};
-		return result;
-	}
-}
 
-Move Bot::getMove(const Board& situation) {
-	std::clock_t c_start = std::clock();
-	if (this->assessments.count(situation)) {
-		auto tmp = std::get<0>(this->assessments.at(situation));
-		Bot::timesum += std::clock() - c_start;
-		++Bot::timecounter;
-		return tmp;
-	} else {
-		std::vector<Move> possibleMoves = situation.getValidMoves();
-		Move result = *std::max_element(possibleMoves.begin(), possibleMoves.end(), [&](const Move& a, const Move& b) {
-			// comp function should return true if a<b but it's reversed because actually I want (-a)<(-b) which is a>b
-			auto tmp = this->getAssessment(situation.applyMove(a, true)) > this->getAssessment(situation.applyMove(b, true));
-			//Bot::timesum += std::clock() - c_start;
-			//++Bot::timecounter;
-			return tmp;
-		});
-		this->assessments[situation] = {result, 0, this->getAssessment(situation.applyMove(result, false))};
-		Bot::timesum += std::clock() - c_start;
-		++Bot::timecounter;
-		return result;
-	}
-}
-
-int Bot::getAssessment(const Board& situation) {
-	Board tmp = {situation, true};
-	if (this->assessments.count(situation)) {
-		return std::get<2>(this->assessments.at(situation));
-	} else if (this->assessments.count(tmp)) {
-		return -std::get<2>(this->assessments.at(tmp));
-	} else {
-		return std::accumulate(situation.fields.begin(), situation.fields.end(), 0);
-	}
-}
-*/
 std::ostream& operator<<(std::ostream& stream, const Bot& bot) {
 	stream << "Bot(";
 	for (std::size_t i = 0; i < bot.values.size(); ++i) {
