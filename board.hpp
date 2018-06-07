@@ -56,6 +56,7 @@ public:
 	Board();
 	Board(const Board & previous) : Board(previous, 0) {};
 	Board(const Board & previous, const bool revert);
+	Board(const Board & previous, const bool revert, const bool _);
 	Board(std::string input);
 	void initEmptyField();
 	std::string print() const;

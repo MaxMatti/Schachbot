@@ -98,19 +98,11 @@ Board::Board() {
 
 Board::Board(Board const & previous, const bool revert) {
 	if (revert) {
-		for (unsigned char i = 0; i < 64; ++i) {
-			this->fields[i] = invertPiece(previous.fields[63-i]);
-		}
-		for (unsigned char i = 0; i < 4; ++i) {
-			this->castling[i] = previous.castling[3-i];
-		}
+		std::transform(previous.fields.rbegin(), previous.fields.rend(), this->fields.begin(), invertPiece);
+		std::reverse_copy(previous.castling.begin(), previous.castling.end(), this->castling.begin());
 	} else {
-		for (unsigned char i = 0; i < 64; ++i) {
-			this->fields[i] = previous.fields[i];
-		}
-		for (unsigned char i = 0; i < 4; ++i) {
-			this->castling[i] = previous.castling[i];
-		}
+		std::copy(previous.fields.begin(), previous.fields.end(), this->fields.begin());
+		std::copy(previous.castling.begin(), previous.castling.end(), this->castling.begin());
 	}
 }
 

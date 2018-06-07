@@ -62,5 +62,7 @@ int main(int argc, char const *argv[]) {
 		std::cout << first;
 		first = Tournament(first, 0.1, gen);
 	}
+	std::cout << "Analyzed " << Bot::timecounter << " situation in " << (double) Bot::timesum / CLOCKS_PER_SEC << " seconds.\n";
+	std::cout << "That's " << Bot::timecounter * CLOCKS_PER_SEC / (double) Bot::timesum << " situations per second or " << (double) Bot::timesum * 1000000 / Bot::timecounter / CLOCKS_PER_SEC << " µs per situation.\n";
 	return 0;
 }

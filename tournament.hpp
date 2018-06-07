@@ -1,13 +1,22 @@
+#include <list>
 #include <vector>
 #include "bot.hpp"
 
 #pragma once
 
+enum outcome {
+	notPlayed = 0,
+	whiteWon = 1,
+	blackWon = 2,
+	draw = 3,
+	lineBreak = 4,
+};
+
 class Tournament {
 private:
 	std::vector<std::tuple<Bot, int>> contestants;
 
-	void playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std::vector<std::tuple<Bot, int>>::iterator bot2, const bool rated, const bool loud);
+	void playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std::vector<std::tuple<Bot, int>>::iterator bot2, const bool rated, std::list<outcome>::reverse_iterator result);
 
 public:
 	Tournament() {};
@@ -19,4 +28,5 @@ public:
 	friend std::ostream& operator<<(std::ostream& stream, const Tournament& tournament);
 };
 
+std::ostream& operator<<(std::ostream& stream, const outcome& result);
 std::ostream& operator<<(std::ostream& stream, const Tournament& tournament);

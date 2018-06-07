@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <iostream>
-#include <list>
 #include <thread>
 #include "tournament.hpp"
 
@@ -26,31 +25,41 @@ bool Tournament::addContestant(const Bot& newContestant) {
 
 void Tournament::evaluate(const bool loud) {
 	std::list<std::thread> games;
+	std::list<outcome> results;
 	for (auto it = this->contestants.begin(); it != this->contestants.end(); ++it) {
 		for (auto jt = this->contestants.begin(); jt != this->contestants.end(); ++jt) {
 			if (it != jt) {
 				if (games.size() >= std::thread::hardware_concurrency() - 1) {
 					games.begin()->join();
 					games.pop_front();
+					if (loud) {
+						std::cout << results.front();
+					}
+					results.pop_front();
 				}
-				games.emplace_back(&Tournament::playGame, this, it, jt, true, loud);
-				//this->playGame(it, jt, true, loud);
-			} else if (loud) {
-				std::cout << "-";
+				results.push_back(notPlayed);
+				games.emplace_back(&Tournament::playGame, this, it, jt, true, results.rbegin());
+				//this->playGame(it, jt, true, results.rbegin());
+			} else {
+				games.emplace_back([](){});
+				results.push_back(notPlayed);
 			}
 		}
-		if (loud) {
-			std::cout << "\n";
-			flush(std::cout);
-		}
+		games.emplace_back([](){});
+		results.push_back(lineBreak);
+
 	}
-	while (games.size() > 0) {
+	while (!games.empty()) {
 		games.begin()->join();
 		games.pop_front();
+		if (loud) {
+			std::cout << results.front();
+		}
+		results.pop_front();
 	}
 }
 
-void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std::vector<std::tuple<Bot, int>>::iterator bot2, const bool rated, const bool loud) {
+void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std::vector<std::tuple<Bot, int>>::iterator bot2, const bool rated, std::list<outcome>::reverse_iterator result) {
 	std::vector<Board> board_history;
 	std::vector<Board>::reverse_iterator current_situation;
 	Board new_situation;
@@ -68,18 +77,17 @@ void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std:
 			if (rated) {
 				std::get<1>(*bot1) += 3;
 			}
-			if (loud) {
-				std::cout << "<";
-			}
+			*result = whiteWon;
 			return;
 		} else if (std::count(board_history.begin(), board_history.end(), new_situation) > 2) {
 			if (rated) {
 				std::get<1>(*bot1) += 1;
 				std::get<1>(*bot2) += 1;
 			}
-			if (loud) {
-				std::cout << ".";
-			}
+			*result = draw;
+			return;
+		} else if (new_situation.getValidMoves().empty()) {
+			*result = draw;
 			return;
 		}
 		board_history.push_back(new_situation);
@@ -93,23 +101,46 @@ void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std:
 			if (rated) {
 				std::get<1>(*bot2) += 3;
 			}
-			if (loud) {
-				std::cout << ">";
-			}
+			*result = blackWon;
 			return;
 		}if (std::count(board_history.begin(), board_history.end(), new_situation) > 2) {
 			if (rated) {
 				std::get<1>(*bot1) += 1;
 				std::get<1>(*bot2) += 1;
 			}
-			if (loud) {
-				std::cout << ".";
-			}
+			*result = draw;
+			return;
+		} else if (new_situation.getValidMoves().empty()) {
+			*result = draw;
 			return;
 		}
 		board_history.push_back(new_situation);
 		current_situation = board_history.rbegin();
 	}
+	__builtin_unreachable();
+}
+
+std::ostream& operator<<(std::ostream& stream, const outcome& result) {
+	switch (result) {
+		case notPlayed:
+			stream << '-';
+			break;
+		case whiteWon:
+			stream << '<';
+			break;
+		case blackWon:
+			stream << '>';
+			break;
+		case draw:
+			stream << '.';
+			break;
+		case lineBreak:
+			stream << '\n';
+			break;
+		default:
+			break;
+	}
+	return stream;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Tournament& tournament) {

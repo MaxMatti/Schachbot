@@ -24,14 +24,10 @@ Bot::Bot() {
 	this->values[EnemyKnight] = -3;
 	this->values[EnemyPawn] = -1;
 }
-/*
-Bot::Bot(const Board& start_situation) {
-	this->getMove(start_situation);
-}
-*/
-Bot::Bot(const Bot& previous) : /*assessments(previous.assessments), */values(previous.values) {}
 
-Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator) : /*assessments(previous.assessments), */values(previous.values) {
+Bot::Bot(const Bot& previous) : values(previous.values) {}
+
+Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator) : values(previous.values) {
 	std::uniform_real_distribution<float> distribution(0.0, 1.0);
 	for (int& i : this->values) {
 		if (distribution(generator) < mutationIntensity) {
@@ -70,6 +66,9 @@ std::tuple<Move, int> Bot::getQuickMove(const Board& situation, const unsigned i
 		return std::make_tuple(result, -getAssessment(situation.applyMove(result, true)));
 	} else {
 		std::vector<Move> possibleMoves = situation.getValidMoves();
+		if (possibleMoves.empty()) {
+			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1);
+		}
 		Move bestMove = *(possibleMoves.begin());
 		int bestScore = std::numeric_limits<int>::min() + 1;
 		for (auto move : possibleMoves) {
