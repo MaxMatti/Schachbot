@@ -52,32 +52,39 @@ class Board {
 private:
 	std::array<piece, 64> fields;
 	std::array<bool, 4> castling;
+	std::array<bool, 8> enPassant;
+	std::array<bool, 2> check;
+	std::array<unsigned char, 2> kingPos;
 public:
 	Board();
 	Board(const Board & previous) : Board(previous, 0) {};
 	Board(const Board & previous, const bool revert);
-	Board(const Board & previous, const bool revert, const bool _);
 	Board(std::string input);
 	void initEmptyField();
 	std::string print() const;
 	std::string display() const;
 
 	bool checkmate() const;
-	bool check() const;
+	bool isCheck() const;
 	bool isValid() const;
 	unsigned char countPieces(const piece type) const;
-	void getNextPiece(const piece type, unsigned char *pos) const;
+	//void getNextPiece(const piece type, unsigned char *pos) const;
+	unsigned char getNextPiece(const piece type, unsigned char pos) const;
 	std::vector<Move> getValidMoves() const;
 	std::vector<Move> getValidMoves(const unsigned char pos) const;
 	bool isValidMove(const unsigned char from, const unsigned char to) const;
 	bool isValidMove(const Move& move) const;
 	bool isValidMove(const std::string& move) const;
-	bool isThreatened(const unsigned char pos) const;
+	bool isThreatened(const unsigned char pos, const piece opponent = Enemy) const;
+	void updateThreats(const unsigned char from, const unsigned char to);
+	bool threatens(const unsigned char from, const unsigned char to) const;
+	bool opensThreat(const unsigned char from, const unsigned char to) const;
+	std::vector<char> getThreatRelevantPositions(const unsigned char pos) const;
 	bool isCastlingAllowed(const bool which) const;
 	Board applyMove(const unsigned char from, const unsigned char to, const piece turn_to, bool rotateBoard = true) const;
 	Board applyMove(const Move move, bool rotateBoard = true) const;
 	Board applyMove(const std::string move, bool rotateBoard = true)const;
-	bool operator==(const Board other) const;
+	bool operator==(const Board& other) const;
 
 	friend std::ostream& operator<<(std::ostream& stream, const Board& board);
 	friend bool operator<(const Board& board1, const Board& board2);
@@ -85,6 +92,8 @@ public:
 	friend Bot;
 	friend std::hash<Board>;
 };
+
+std::vector<unsigned char> getBetweenFields(unsigned char from, unsigned char to);
 
 piece operator|(const piece a, const piece b);
 piece operator&(const piece a, const piece b);
@@ -95,7 +104,8 @@ std::ostream& operator<<(std::ostream& stream, const piece& obj);
 std::ostream& operator<<(std::ostream& stream, const Board& board);
 bool operator<(const Board& board1, const Board& board2);
 //bool operator==(const Board& board1, const Board& board2);
-std::map<char, unsigned char> getDirectionSizes(const unsigned char pos);
+constexpr unsigned char getDirectionSize(const unsigned char pos, const char direction);
+std::unordered_map<char, unsigned char> getDirectionSizes(const unsigned char pos);
 
 namespace std {
 	template <std::size_t size>

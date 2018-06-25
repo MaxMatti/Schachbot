@@ -7,8 +7,27 @@
 #include "bot.hpp"
 #include "move.hpp"
 
-std::atomic<unsigned long long int> Bot::timesum = 1;
-std::atomic<unsigned int> Bot::timecounter = 1;
+std::atomic<unsigned long long int> Bot::timeSum = 1;
+std::atomic<unsigned int> Bot::timeCounter = 1;
+double Bot::timeMean = 1;
+double Bot::timeM2 = 1;
+double Bot::timeVariance = 1;
+std::mutex Bot::timeMutex;
+
+void Bot::updateTimings(const unsigned long long int time) {
+	Bot::timeSum += time;
+	++Bot::timeCounter;
+	/*Bot::timeMutex.lock();
+	double delta = time - Bot::timeMean;
+	Bot::timeMean += delta / Bot::timeCounter;
+	double delta2 = time - Bot::timeMean;
+	Bot::timeM2 += delta * delta2;
+	Bot::timeMutex.unlock();*/
+}
+
+void Bot::finalizeTimings() {
+	Bot::timeVariance = Bot::timeM2 / Bot::timeCounter;
+}
 
 Bot::Bot() {
 	this->values[OwnKing] = 127;
@@ -38,7 +57,7 @@ Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& gene
 	}
 }
 
-std::tuple<Move, int> Bot::getQuickMove(const Board& situation, const unsigned int depth, const bool loud) {
+std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, const unsigned int depth, const bool loud) {
 	auto addFigureWeight = [this](int before, const piece& figure) {
 		return before + this->values[figure];
 	};
@@ -49,36 +68,67 @@ std::tuple<Move, int> Bot::getQuickMove(const Board& situation, const unsigned i
 		std::clock_t c_start = std::clock();
 		std::vector<Move> possibleMoves = situation.getValidMoves();
 		if (loud) {
-			std::cout << "Valid Moves:";
+			std::cout << "Possible Moves:";
 			std::for_each(possibleMoves.begin(), possibleMoves.end(), [](Move& move){ std::cout << " " << move; });
 			std::cout << "\n";
 		}
-		if (possibleMoves.empty()) {
-			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1);
-		}
-		Move result = *std::max_element(possibleMoves.begin(), possibleMoves.end(), [&](const Move& a, const Move& b) {
-			// comp function should return true if a<b but it's reversed because actually I want (-a)<(-b) which is a>b
-			auto tmp = getAssessment(situation.applyMove(a, true)) > getAssessment(situation.applyMove(b, true));
-			return tmp;
-		});
-		Bot::timesum += std::clock() - c_start;
-		++Bot::timecounter;
-		return std::make_tuple(result, -getAssessment(situation.applyMove(result, true)));
-	} else {
-		std::vector<Move> possibleMoves = situation.getValidMoves();
-		if (possibleMoves.empty()) {
-			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1);
-		}
-		Move bestMove = *(possibleMoves.begin());
-		int bestScore = std::numeric_limits<int>::min() + 1;
-		for (auto move : possibleMoves) {
-			auto tmp = this->getQuickMove(situation.applyMove(move, true), depth - 1);
-			if (-std::get<1>(tmp) > bestScore) {
-				bestScore = -std::get<1>(tmp);
-				bestMove = move;
+		auto validateMove = [&situation = std::as_const(situation)](const Move& move){
+			Board new_situation = situation.applyMove(move, false);
+			auto tmp = new_situation.getNextPiece(OwnKing, 0);
+			return tmp < 64 && !new_situation.isCheck();
+		};
+		std::vector<std::tuple<Move, int, unsigned int>> validMoves;
+		for (auto i : possibleMoves) {
+			if (validateMove(i)) {
+				validMoves.push_back(std::make_tuple(i, -getAssessment(situation.applyMove(i)), 0));
 			}
 		}
-		return std::make_tuple(bestMove, bestScore);
+		//std::copy_if(possibleMoves.begin(), possibleMoves.end(), std::back_inserter(validMoves), validateMove);
+		if (loud) {
+			std::cout << "Valid Moves:";
+			std::for_each(validMoves.begin(), validMoves.end(), [](auto& move){ std::cout << " " << std::get<0>(move); });
+			std::cout << "\n";
+		}
+		if (validMoves.empty()) {
+			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max());
+		}
+		/*std::vector<int> assessments;
+		std::transform(validMoves.begin(), validMoves.end(), std::back_inserter(assessments), [&getAssessment, &situation](const Move& move){return -getAssessment(situation.applyMove(move, true)); });
+		std::size_t pos = std::distance(assessments.begin(), std::max_element(assessments.begin(), assessments.end()));*/
+		Bot::updateTimings(std::clock() - c_start);
+		return *std::max_element(validMoves.begin(), validMoves.end(), [](auto a, auto b){return std::get<1>(a) < std::get<1>(b);});
+		//return std::make_tuple(validMoves[pos], assessments[pos]);
+	} else {
+		std::vector<Move> possibleMoves = situation.getValidMoves();
+		//std::vector<Move> validMoves;
+		auto validateMove = [&situation = std::as_const(situation)](const Move& move){
+			Board new_situation = situation.applyMove(move, false);
+			auto tmp = new_situation.getNextPiece(OwnKing, 0);
+			return tmp < 64 && !new_situation.isThreatened(tmp);
+		};
+		std::vector<std::tuple<Move, int, unsigned int>> validMoves;
+		for (auto i : possibleMoves) {
+			if (validateMove(i)) {
+				validMoves.push_back(std::make_tuple(i, -getAssessment(situation.applyMove(i)), 0));
+			}
+		}
+		//std::copy_if(possibleMoves.begin(), possibleMoves.end(), std::back_inserter(validMoves), validateMove);
+		if (validMoves.empty()) {
+			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max());
+		}
+		if (depth > 3) {
+			for (auto& it : validMoves) {
+				std::tie(std::ignore, std::get<1>(it), std::get<2>(it)) = this->getQuickMove(situation.applyMove(std::get<0>(it), false), 0);
+			}
+			std::nth_element(validMoves.begin(), validMoves.begin() + std::min(validMoves.size() / 2, 20ul), validMoves.end(), [](const auto& a, const auto& b){ return std::get<1>(a) > std::get<1>(b); });
+			validMoves.resize(std::min(validMoves.size() / 2, 20ul));
+		}
+		for (auto& it : validMoves) {
+			std::tie(std::ignore, std::get<1>(it), std::get<2>(it)) = this->getQuickMove(situation.applyMove(std::get<0>(it), true), depth - 1);
+			std::get<1>(it) *= -1;
+			std::get<2>(it) = std::max(std::get<2>(it), depth);
+		}
+		return *std::max_element(validMoves.begin(), validMoves.end(), [](const auto& a, const auto& b){ return std::get<1>(a) < std::get<1>(b); });
 	}
 }
 

@@ -1,3 +1,5 @@
+#include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <set>
@@ -47,6 +49,49 @@ int main(int argc, char const *argv[]) {
 	initValues[EnemyKnight] = -3;
 	initValues[EnemyPawn] = -1;
 	Bot initBot(initValues);
+	std::string initBoard = "R       "
+							"        "
+							"        "
+							"  k     "
+							"        "
+							"     K  "
+							"        "
+							"        ";
+	Board current_situation(initBoard);
+	bool invert = false;
+	while (current_situation.isValid()) {
+		Move move;
+		for (int i = 0; i < 20; ++i) {
+			std::cout << current_situation;
+			std::cout << std::right << std::setw(4) << i << ": ";
+			std::tie(move, std::ignore, i) = initBot.getQuickMove(current_situation, i, false);
+			Board tmp_situation = current_situation;
+			invert = false;
+			for (int j = i; j > 0; --j) {
+				if (invert) {
+					std::cout << move.invert() << " -> ";
+					//std::cout << "\n" << Board(tmp_situation, true);
+				} else {
+					std::cout << move << " -> ";
+					//std::cout << "\n" << tmp_situation;
+				}
+				tmp_situation = tmp_situation.applyMove(move, true);
+				move = std::get<0>(initBot.getQuickMove(tmp_situation, j, false));
+				invert = !invert;
+			}
+			std::cout << move << "\n";
+			std::cout << "Analyzed " << Bot::timeCounter << " situations in " << (double) Bot::timeSum / CLOCKS_PER_SEC << " seconds.\n";
+			std::cout << "That's " << Bot::timeCounter * CLOCKS_PER_SEC / (double) Bot::timeSum << " situations per second or " << (double) Bot::timeSum * 1000000 / Bot::timeCounter / CLOCKS_PER_SEC << " µs per situation.\n";
+			std::flush(std::cout);
+		}
+		move = std::get<0>(initBot.getQuickMove(current_situation, 20, false));
+		current_situation = current_situation.applyMove(move, true);
+		std::cout << current_situation.display();
+		if (move == Move()) {
+			break;
+		}
+	}
+	/*
 	std::random_device dev;
 	std::mt19937 gen(dev());
 	Tournament first;
@@ -56,13 +101,17 @@ int main(int argc, char const *argv[]) {
 			--i;
 		}
 	}
-	std::cout << first;
-	for (auto i = 0; i < 1; ++i) {
-		first.evaluate(true);
-		std::cout << first;
+	//std::cout << first;
+	for (auto i = 0; i < 10; ++i) {
+		first.evaluate(false);
+		//std::cout << first;
 		first = Tournament(first, 0.1, gen);
 	}
-	std::cout << "Analyzed " << Bot::timecounter << " situation in " << (double) Bot::timesum / CLOCKS_PER_SEC << " seconds.\n";
-	std::cout << "That's " << Bot::timecounter * CLOCKS_PER_SEC / (double) Bot::timesum << " situations per second or " << (double) Bot::timesum * 1000000 / Bot::timecounter / CLOCKS_PER_SEC << " µs per situation.\n";
+	//Bot::finalizeTimings();*/
+	std::cout << "Analyzed " << Bot::timeCounter << " situations in " << (double) Bot::timeSum / CLOCKS_PER_SEC << " seconds.\n";
+	//std::cout << "Offline Algorithm:\n";
+	std::cout << "That's " << Bot::timeCounter * CLOCKS_PER_SEC / (double) Bot::timeSum << " situations per second or " << (double) Bot::timeSum * 1000000 / Bot::timeCounter / CLOCKS_PER_SEC << " µs per situation.\n";
+	/*std::cout << "Online Algorithm:\n";
+	std::cout << "That's " << CLOCKS_PER_SEC / Bot::timeMean << " situations per second of " << Bot::timeMean * 1000000 / CLOCKS_PER_SEC << "µs per situation with a standard derivation of " << std::sqrt(Bot::timeVariance) * 1000000 / CLOCKS_PER_SEC << "µs.\n";*/
 	return 0;
 }

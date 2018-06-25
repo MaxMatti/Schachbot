@@ -10,3 +10,7 @@ Move Move::invert() const {
 	Move result(63 - this->from, 63 - this->to, invertPiece(this->turn_to));
 	return result;
 }
+
+bool Move::operator==(const Move& other) const {
+	return this->from == other.from && this->to == other.to && this->turn_to == other.turn_to;
+}

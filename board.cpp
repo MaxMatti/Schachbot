@@ -100,9 +100,23 @@ Board::Board(Board const & previous, const bool revert) {
 	if (revert) {
 		std::transform(previous.fields.rbegin(), previous.fields.rend(), this->fields.begin(), invertPiece);
 		std::reverse_copy(previous.castling.begin(), previous.castling.end(), this->castling.begin());
+		for (unsigned char i = 0; i < 8; ++i) {
+			this->enPassant[i] = false;
+		}
+		this->kingPos[0] = 63 - previous.kingPos[1];
+		this->kingPos[1] = 63 - previous.kingPos[0];
+		this->check[0] = previous.check[1];
+		this->check[1] = previous.check[0];
 	} else {
 		std::copy(previous.fields.begin(), previous.fields.end(), this->fields.begin());
 		std::copy(previous.castling.begin(), previous.castling.end(), this->castling.begin());
+		for (unsigned char i = 0; i < 8; ++i) {
+			this->enPassant[i] = false;
+		}
+		this->kingPos[0] = previous.kingPos[0];
+		this->kingPos[1] = previous.kingPos[1];
+		this->check[0] = previous.check[0];
+		this->check[1] = previous.check[1];
 	}
 }
 
@@ -135,6 +149,16 @@ Board::Board(std::string input) {
 			this->castling[3] = true;
 		}
 	}
+	for (unsigned char i = 0; i < 8; ++i) {
+		this->enPassant[i] = false;
+	}
+	for (unsigned char i = 0; i < 2; ++i) {
+		this->check[i] = false;
+	}
+	this->kingPos[0] = this->getNextPiece(OwnKing, 0);
+	this->kingPos[1] = this->getNextPiece(EnemyKing, 0);
+	this->check[0] = isThreatened(this->kingPos[0]);
+	this->check[1] = isThreatened(this->kingPos[1], Own);
 }
 
 void Board::initEmptyField() {
@@ -166,6 +190,13 @@ void Board::initEmptyField() {
 	for (unsigned char i = 0; i < 4; ++i) {
 		this->castling[i] = true;
 	}
+	for (unsigned char i = 0; i < 8; ++i) {
+		this->enPassant[i] = false;
+	}
+	this->kingPos[0] = 60;
+	this->kingPos[1] = 4;
+	this->check[0] = false;
+	this->check[1] = false;
 }
 
 std::string Board::print() const {
@@ -205,9 +236,8 @@ bool Board::checkmate() const { // TODO: needs to be implemented.
 	return false;
 }
 
-// return whether or not I am in check.
-bool Board::check() const { // TODO: needs to be implemented.
-	return false;
+bool Board::isCheck() const {
+	return this->check[0];
 }
 
 // return whether or not this board is playable.
@@ -230,13 +260,22 @@ unsigned char Board::countPieces(const piece type) const {
 	}
 	return result;
 }
-
+/*
 void Board::getNextPiece(const piece type, unsigned char *pos) const {
 	for (++(*pos); *pos < 64; ++(*pos)) {
 		if (this->fields[*pos] == type) {
 			return;
 		}
 	}
+}
+*/
+unsigned char Board::getNextPiece(const piece type, unsigned char pos) const {
+	for (++pos; pos < 64; ++pos) {
+		if (this->fields[pos] == type) {
+			return pos;
+		}
+	}
+	return 64;
 }
 
 std::vector<Move> Board::getValidMoves() const {
@@ -548,30 +587,28 @@ bool Board::isValidMove(const std::string& move) const {
 	}
 }
 
-bool Board::isThreatened(const unsigned char pos) const {
-
-	std::map<char, unsigned char> directions = getDirectionSizes(pos);
+bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
 	for (char direction : {-8, -1, 1, 8}) {
-		for (unsigned char i = 1; i < directions[direction]; ++i) {
-			if ((this->fields[pos + i * direction] & EnemyRook) == EnemyRook) {
+		for (unsigned char i = 1; i < getDirectionSize(pos, direction); ++i) {
+			if ((this->fields[pos + i * direction] & (opponent | Rook)) == (opponent | Rook)) {
 				return true;
 			} else if (this->fields[pos + i * direction] != None) {
 				break;
 			}
 		}
-		if (directions[direction] > 0 && this->fields[pos + direction] == EnemyKing) {
+		if (getDirectionSize(pos, direction) > 0 && this->fields[pos + direction] == (opponent | King)) {
 			return true;
 		}
 	}
 	for (char direction : {-9, -7, 7, 9}) {
-		for (unsigned char i = 1; i < directions[direction]; ++i) {
-			if ((this->fields[pos + i * direction] & EnemyBishop) == EnemyBishop) {
+		for (unsigned char i = 1; i < getDirectionSize(pos, direction); ++i) {
+			if ((this->fields[pos + i * direction] & (opponent | Bishop)) == (opponent | Bishop)) {
 				return true;
 			} else if (this->fields[pos + i * direction] != None) {
 				break;
 			}
 		}
-		if (directions[direction] > 0 && this->fields[pos + direction] == EnemyKing) {
+		if (getDirectionSize(pos, direction) > 0 && this->fields[pos + direction] == (opponent | King)) {
 			return true;
 		}
 	}
@@ -611,7 +648,7 @@ bool Board::isThreatened(const unsigned char pos) const {
 		}
 	}
 	for (auto i : movingFrom) {
-		if (this->fields[pos + i] == EnemyKnight) {
+		if (this->fields[pos + i] == (opponent | Knight)) {
 			return true;
 		}
 	}
@@ -619,18 +656,231 @@ bool Board::isThreatened(const unsigned char pos) const {
 	// Pawn
 	if (pos > 7) {
 		if ((pos & 7) != 0) {
-			if (this->fields[pos - 9] == EnemyPawn) {
+			if (this->fields[pos - 9] == (opponent | Pawn)) {
 				return true;
 			}
 		}
 		if ((pos & 7) != 7) {
-			if (this->fields[pos - 7] == EnemyPawn) {
+			if (this->fields[pos - 7] == (opponent | Pawn)) {
 				return true;
 			}
 		}
 	}
 
 	return false;
+}
+
+void Board::updateThreats(const unsigned char from, const unsigned char to) {
+	for (std::size_t i = 0; i < 2; ++i) {
+		if (this->kingPos[i] == to) {
+			this->check[i] = this->isThreatened(this->kingPos[i], Enemy);
+		} else {
+			this->check[i] = this->check[i] || this->threatens(to, kingPos[i]);
+			this->check[i] = this->check[i] || this->opensThreat(from, kingPos[i]);
+		}
+	}
+}
+
+bool Board::threatens(const unsigned char from, const unsigned char to) const {
+	char x1 = from % 8;
+	char y1 = from / 8;
+	char x2 = to % 8;
+	char y2 = to / 8;
+	piece player;
+	piece opponent;
+	if (this->fields[from] & Enemy) {
+		player = Enemy;
+		opponent = Own;
+	} else {
+		player = Own;
+		opponent = Enemy;
+	}
+	if (this->fields[from] == None) {
+		return false;
+	} else if (this->fields[from] == (player | Pawn)) {
+		if (y1 == y2 + 1) {
+			if (x1 == x2 && this->fields[to] == None) {
+				return true;
+			} else if (x1 + 1 == x2 && (this->fields[to] & opponent)) {
+				return true;
+			} else if (x1 - 1 == x2 && (this->fields[to] & opponent)) {
+				return true;
+			} else {
+				return false;
+			}
+		} else if (y1 == 6 && y2 == 4 && this->fields[to] == None && this->fields[(from + to) / 2] == None) {
+				return true;
+		} else {
+			return false;
+		}
+	} else if (this->fields[from] == (player | Knight)) {
+		if (y1 + 1 == y2 || y1 == y2 + 1) {
+			if (x1 + 2 == x2 || x1 == x2 + 2) {
+				return true;
+			} else {
+				return false;
+			}
+		} else if (y1 + 2 == y2 || y1 == y2 + 2) {
+			if (x1 + 1 == x2 || x1 == x2 + 1) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	} else if (this->fields[from] == (player | King)) {
+		if (abs(x1 - x2) < 2 && abs(y1 - y2) < 2) {
+			return true;
+		} else if (this->castling[0] && this->isCastlingAllowed(0)) {
+			return true;
+		} else if (this->castling[1] && this->isCastlingAllowed(1)) {
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		if ((this->fields[from] & OwnBishop) == (player | Bishop)) { // bishop or queen - can't return something here in some cases because of queen
+			if (x1 + y1 == x2 + y2) {
+				int xstart = std::min(x1, x2) + 1;
+				int xend = std::max(x1, x2) - 1;
+				int ystart = std::max(y1, y2) - 1;
+				for (int i = 0; i < xend - xstart; ++i) {
+					if (this->fields[(ystart - i) * 8 + i + xstart] != None) {
+						return false;
+					}
+				}
+				return true;
+			} else if (x1 - y1 == x2 - y2) {
+				int xstart = std::min(x1, x2) + 1;
+				int xend = std::max(x1, x2) - 1;
+				int ystart = std::min(y1, y2) + 1;
+				for (int i = 0; i < xend - xstart; ++i) {
+					if (this->fields[(ystart + i) * 8 + i + xstart] != None) {
+						return false;
+					}
+				}
+				return true;
+			} // no else here on purpose - might be a queen which is allowed other stuff
+		}
+		if ((this->fields[from] & OwnRook) == (player | Rook)) { // rook or queen - can return something here in all cases because it was not a possible bishop move
+			if (x1 == x2) {
+				for (unsigned char i = std::min(from, to) + 8; i < std::max(from, to) - 8; i += 8) {
+					if (this->fields[i] != None) {
+						return false;
+					}
+				}
+				return true;
+			} else if (y1 == y2) {
+				for (unsigned char i = std::min(from, to) + 1; i < std::max(from, to) - 1; ++i) {
+					if (this->fields[i] != None) {
+						return false;
+					}
+				}
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+	return false;
+}
+
+// TODO: needs review and testing. I don't trust this solution.
+bool Board::opensThreat(const unsigned char from, const unsigned char to) const {
+	piece opponent;
+	if (this->fields[to] & Enemy) {
+		opponent = Own;
+	} else {
+		opponent = Enemy;
+	}
+	if (from == to) {
+		return false;
+	}
+	char direction = (char) from - to;
+	while (std::abs(direction) > 9 && std::abs(direction) % 2 == 0) {
+		direction /= 2;
+	}
+	if (std::abs(direction) > 9 && direction % 2 == 1) {
+		return false;
+	}
+	for (char i = 1; i < getDirectionSize(from, direction); ++i) {
+		if (this->fields[to + i * direction] & opponent) {
+			return this->threatens(to + i * direction, to);
+		}
+	}
+	return false;
+}
+
+std::vector<char> Board::getThreatRelevantPositions(const unsigned char pos) const {
+
+	std::vector<char> result;
+	result.reserve(20);
+
+	for (char direction : {-8, -1, 1, 8}) {
+		for (unsigned char i = 1; i < getDirectionSize(pos, direction); ++i) {
+			if ((this->fields[pos + i * direction] & EnemyRook) == EnemyRook) {
+				result.push_back(pos + i * direction);
+				break;
+			} else if (this->fields[pos + i * direction] != None) {
+				break;
+			} else {
+				result.push_back(pos + i * direction);
+			}
+		}
+	}
+	for (char direction : {-9, -7, 7, 9}) {
+		for (unsigned char i = 1; i < getDirectionSize(pos, direction); ++i) {
+			if ((this->fields[pos + i * direction] & EnemyBishop) == EnemyBishop) {
+				result.push_back(pos + i * direction);
+				break;
+			} else if (this->fields[pos + i * direction] != None) {
+				break;
+			} else {
+				result.push_back(pos + i * direction);
+			}
+		}
+	}
+
+	// Knight
+	std::set<char> movingFrom = {-17, -15, -10, -6, 6, 10, 15, 17};
+	if (pos / 8 < 2) {
+		movingFrom.erase((char) -17);
+		movingFrom.erase((char) -15);
+		if (pos / 8 < 1) {
+			movingFrom.erase((char) -10);
+			movingFrom.erase((char) -6);
+		}
+	}
+	if (pos / 8 > 5) {
+		movingFrom.erase((char) 17);
+		movingFrom.erase((char) 15);
+		if (pos / 8 > 6) {
+			movingFrom.erase((char) 10);
+			movingFrom.erase((char) 6);
+		}
+	}
+	if (pos % 8 < 2) {
+		movingFrom.erase((char) -10);
+		movingFrom.erase((char) 6);
+		if (pos % 8 < 1) {
+			movingFrom.erase((char) -17);
+			movingFrom.erase((char) 15);
+		}
+	}
+	if (pos % 8 > 5) {
+		movingFrom.erase((char) -6);
+		movingFrom.erase((char) 10);
+		if (pos % 8 > 6) {
+			movingFrom.erase((char) -15);
+			movingFrom.erase((char) 17);
+		}
+	}
+	for (auto i : movingFrom) {
+		result.push_back(pos + i);
+	}
+
+	return result;
 }
 
 bool Board::isCastlingAllowed(const bool which) const {
@@ -668,7 +918,7 @@ Board Board::applyMove(const unsigned char from, const unsigned char to, const p
 		result.fields[63 - from] = None;
 
 		// execute castling:
-		if (this->fields[from] == EnemyKing && (abs(from - to) == 2 || abs(from - to) == 3)) {
+		if (this->fields[from] == OwnKing && (abs(from - to) == 2 || abs(from - to) == 3)) {
 			if (to > from) {
 				result.fields[62 - to] = result.fields[0];
 				result.fields[0] = None;
@@ -682,6 +932,17 @@ Board Board::applyMove(const unsigned char from, const unsigned char to, const p
 		// execute pawn promotion:
 		if (to < 8 && result.fields[63 - to] == EnemyPawn && turn_to != None) {
 			result.fields[63 - to] = invertPiece(turn_to);
+		}
+
+		// save en passant possibilities
+		if (from > 47 && from < 56 && to == from - 16) {
+			result.enPassant[55 - from] = true;
+		}
+
+		// update king position:
+		if (this->fields[from] == OwnKing) {
+			result.kingPos[1] = 63 - to;
+			result.updateThreats(63 - from, 63 - to);
 		}
 	} else {
 		result.fields[to] = result.fields[from];
@@ -702,6 +963,12 @@ Board Board::applyMove(const unsigned char from, const unsigned char to, const p
 		// execute pawn promotion:
 		if (to < 8 && result.fields[to] == OwnPawn && turn_to != None) {
 			result.fields[to] = turn_to;
+		}
+
+		// update king position:
+		if (this->fields[from] == OwnKing) {
+			result.kingPos[0] = to;
+			result.updateThreats(from, to);
 		}
 	}
 	return result;
@@ -731,7 +998,33 @@ Board Board::applyMove(const std::string move, bool rotateBoard) const {
 	}
 }
 
-bool Board::operator==(const Board other) const {
+std::vector<unsigned char> getBetweenFields(unsigned char from, unsigned char to) {
+	//char min = std::min(from, to);
+	//char max = std::max(from, to);
+	std::vector<unsigned char> result;
+	if (from == to) {
+		// no need to do the calculations.
+	} else if (from / 8 == to / 8) {
+		for (unsigned char i = std::min(from, to) + 1; i < std::max(from, to); ++i) {
+			result.push_back(i);
+		}
+	} else if (from % 8 == to % 8) {
+		for (unsigned char i = std::min(from, to) + 8; i < std::max(from, to); i += 8) {
+			result.push_back(i);
+		}
+	} else if (from / 8 + from % 8 == to / 8 + to % 8) {
+		for (unsigned char i = std::min(from, to) + 7; i < std::max(from, to); i += 7) {
+			result.push_back(i);
+		}
+	} else if (from / 8 - from % 8 == to / 8 - to % 8) {
+		for (unsigned char i = std::min(from, to) + 9; i < std::max(from, to); i += 9) {
+			result.push_back(i);
+		}
+	}
+	return result;
+}
+
+bool Board::operator==(const Board& other) const {
 	for (unsigned char i = 0; i < 64; ++i) {
 		if (this->fields[i] != other.fields[i]) {
 			return false;
@@ -784,11 +1077,21 @@ std::ostream& operator<<(std::ostream& stream, const piece& obj) {
 
 std::ostream& operator<<(std::ostream& stream, const Board& board){
 	for (uint i = 0; i < 8; ++i) {
+		stream << 8 - i;
 		for (uint j = 0; j < 8; ++j) {
+			if ((i + j) & 1) {
+				stream << "\033[0m";
+			} else {
+				stream << "\033[48;5;0m";
+			}
 			stream << getChessSymbol(board.fields[i*8+j]);
+		}
+		if (i & 1) {
+			stream << "\033[0m";
 		}
 		stream << "\n";
 	}
+	stream << " abcdefgh\n";
 	return stream;
 }
 
@@ -800,8 +1103,33 @@ bool operator==(const Board& board1, const Board& board2) {
 	return board1.fields == board2.fields && board1.castling == board2.castling;
 }
 */
-std::map<char, unsigned char> getDirectionSizes(const unsigned char pos) {
-	std::map<char, unsigned char> result;
+
+constexpr unsigned char getDirectionSize(const unsigned char pos, const char direction) {
+	switch (direction) {
+		case -8:
+		return pos / 8;
+		case 8:
+		return 7 - pos / 8;
+		case -1:
+		return pos & 7;
+		case 1:
+		return 7 - (pos & 7);
+		case -9:
+		return std::min(pos / 8, pos & 7);
+		case -7:
+		return std::min(pos / 8, 7 - (pos & 7));
+		case 7:
+		return std::min(7 - pos / 8, pos & 7);
+		case 9:
+		return std::min(7 - pos / 8, 7 - (pos & 7));
+		default:
+		return 0;
+	}
+	return 0;
+}
+
+std::unordered_map<char, unsigned char> getDirectionSizes(const unsigned char pos) {
+	std::unordered_map<char, unsigned char> result;
 	result[-8] = pos / 8;
 	result[8] = 7 - result[-8];
 	result[-1] = pos & 7;
