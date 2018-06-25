@@ -1100,10 +1100,9 @@ bool operator<(const Board& board1, const Board& board2) {
 }
 /*
 bool operator==(const Board& board1, const Board& board2) {
-	return board1.fields == board2.fields && board1.castling == board2.castling;
+	return board1.fields == board2.fields && board1.castling == board2.castling && board1.enPassant == board2.enPassant && board1.check == board2.check && board1.kingPos == board2.kingPos;
 }
 */
-
 constexpr unsigned char getDirectionSize(const unsigned char pos, const char direction) {
 	switch (direction) {
 		case -8:
@@ -1126,17 +1125,4 @@ constexpr unsigned char getDirectionSize(const unsigned char pos, const char dir
 		return 0;
 	}
 	return 0;
-}
-
-std::unordered_map<char, unsigned char> getDirectionSizes(const unsigned char pos) {
-	std::unordered_map<char, unsigned char> result;
-	result[-8] = pos / 8;
-	result[8] = 7 - result[-8];
-	result[-1] = pos & 7;
-	result[1] = 7 - result[-1];
-	result[-9] = std::min(result[-1], result[-8]);
-	result[-7] = std::min(result[1], result[-8]);
-	result[7] = std::min(result[-1], result[8]);
-	result[9] = std::min(result[1], result[8]);
-	return result;
 }

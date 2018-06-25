@@ -1,4 +1,5 @@
 #include <cmath>
+#include <csignal>
 #include <iomanip>
 #include <iostream>
 #include <random>
@@ -30,7 +31,20 @@ std::string read_move() {
 	return result;
 }
 
+void signal_handler(int signal) {
+	//Bot::finalizeTimings();
+	std::cout << "Analyzed " << Bot::timeCounter << " situations in " << (double) Bot::timeSum / CLOCKS_PER_SEC << " seconds.\n";
+	//std::cout << "Offline Algorithm:\n";
+	std::cout << "That's " << Bot::timeCounter * CLOCKS_PER_SEC / (double) Bot::timeSum << " situations per second or " << (double) Bot::timeSum * 1000000 / Bot::timeCounter / CLOCKS_PER_SEC << " µs per situation.\n";
+	std::cout << "Possible moves: " << Bot::maxPossibleMoves << "\n";
+	std::cout << "Valid moves: " << Bot::maxValidMoves << "\n";
+	/*std::cout << "Online Algorithm:\n";
+	std::cout << "That's " << CLOCKS_PER_SEC / Bot::timeMean << " situations per second of " << Bot::timeMean * 1000000 / CLOCKS_PER_SEC << "µs per situation with a standard derivation of " << std::sqrt(Bot::timeVariance) * 1000000 / CLOCKS_PER_SEC << "µs.\n";*/
+	exit(0);
+}
+
 int main(int argc, char const *argv[]) {
+	std::signal(SIGINT, signal_handler);
 	if (argc < 1) {
 		std::cout << *argv << "\n";
 	}
@@ -49,14 +63,22 @@ int main(int argc, char const *argv[]) {
 	initValues[EnemyKnight] = -3;
 	initValues[EnemyPawn] = -1;
 	Bot initBot(initValues);
-	std::string initBoard = "R       "
+	/*std::string initBoard = "R       "
 							"        "
 							"        "
 							"  k     "
 							"        "
 							"     K  "
 							"        "
-							"        ";
+							"        ";*/
+	std::string initBoard = "rbnqknbr"
+							"pppppppp"
+							"        "
+							"        "
+							"        "
+							"        "
+							"PPPPPPPP"
+							"RBNQKNBR";
 	Board current_situation(initBoard);
 	bool invert = false;
 	while (current_situation.isValid()) {
@@ -111,6 +133,8 @@ int main(int argc, char const *argv[]) {
 	std::cout << "Analyzed " << Bot::timeCounter << " situations in " << (double) Bot::timeSum / CLOCKS_PER_SEC << " seconds.\n";
 	//std::cout << "Offline Algorithm:\n";
 	std::cout << "That's " << Bot::timeCounter * CLOCKS_PER_SEC / (double) Bot::timeSum << " situations per second or " << (double) Bot::timeSum * 1000000 / Bot::timeCounter / CLOCKS_PER_SEC << " µs per situation.\n";
+	std::cout << "Possible moves: " << Bot::maxPossibleMoves << "\n";
+	std::cout << "Valid moves: " << Bot::maxValidMoves << "\n";
 	/*std::cout << "Online Algorithm:\n";
 	std::cout << "That's " << CLOCKS_PER_SEC / Bot::timeMean << " situations per second of " << Bot::timeMean * 1000000 / CLOCKS_PER_SEC << "µs per situation with a standard derivation of " << std::sqrt(Bot::timeVariance) * 1000000 / CLOCKS_PER_SEC << "µs.\n";*/
 	return 0;

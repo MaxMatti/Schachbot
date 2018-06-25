@@ -16,13 +16,15 @@ private:
 
 public:
 	static std::atomic<unsigned long long int> timeSum;
-	static std::atomic<unsigned int> timeCounter;
+	static std::atomic<unsigned long int> timeCounter;
+	static std::atomic<unsigned long int> maxPossibleMoves;
+	static std::atomic<unsigned long int> maxValidMoves;
 	static double timeMean;
 	static double timeM2;
 	static double timeVariance;
 	static std::mutex timeMutex;
 
-	static void updateTimings(const unsigned long long int time);
+	static void updateTimings(const unsigned long long int time, const unsigned long int possibleMoveSize, const unsigned long int validMoveSize);
 	static void finalizeTimings();
 
 	Bot();
@@ -36,6 +38,8 @@ public:
 	friend bool operator==(const Bot& bot1, const Bot& bot2);
 };
 
+template<typename T>
+void updateMaximum(std::atomic<T>& maximum_value, T const& value) noexcept;
 std::ostream& operator<<(std::ostream& stream, const Bot& bot);
 bool operator<(const Bot& bot1, const Bot& bot2);
 bool operator==(const Bot& bot1, const Bot& bot2);

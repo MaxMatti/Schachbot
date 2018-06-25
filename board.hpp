@@ -105,7 +105,6 @@ std::ostream& operator<<(std::ostream& stream, const Board& board);
 bool operator<(const Board& board1, const Board& board2);
 //bool operator==(const Board& board1, const Board& board2);
 constexpr unsigned char getDirectionSize(const unsigned char pos, const char direction);
-std::unordered_map<char, unsigned char> getDirectionSizes(const unsigned char pos);
 
 namespace std {
 	template <std::size_t size>
