@@ -108,6 +108,7 @@ int main(int argc, char const *argv[]) {
 			std::cout << move << "\n";
 			std::flush(std::cout);
 		}
+		break;
 		move = std::get<0>(initBot.getQuickMove(current_situation, 20, false));
 		current_situation = current_situation.applyMove(move, true);
 		if (move == Move()) {
