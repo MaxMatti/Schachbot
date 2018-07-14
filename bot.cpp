@@ -7,40 +7,10 @@
 #include "bot.hpp"
 #include "move.hpp"
 
-std::atomic<unsigned long long int> Bot::timeSum = 1;
-std::atomic<unsigned long int> Bot::timeCounter = 1;
-std::atomic<unsigned long int> Bot::maxPossibleMoves = 1;
-std::atomic<unsigned long int> Bot::maxValidMoves = 1;
-double Bot::timeMean = 1;
-double Bot::timeM2 = 1;
-double Bot::timeVariance = 1;
-std::mutex Bot::timeMutex;
-
 template<typename T>
-void updateMaximum(std::atomic<T>& maximum_value, T const& value) noexcept
-{
+void updateMaximum(std::atomic<T>& maximum_value, T const& value) noexcept {
     T prev_value = maximum_value;
-    while(prev_value < value &&
-            !maximum_value.compare_exchange_weak(prev_value, value))
-        ;
-}
-void Bot::updateTimings(const unsigned long long int time, const unsigned long int possibleMoveSize, const unsigned long int validMoveSize) {
-	Bot::timeSum += time;
-	Bot::timeCounter += validMoveSize;
-	updateMaximum(Bot::maxPossibleMoves, possibleMoveSize);
-	updateMaximum(Bot::maxValidMoves, validMoveSize);
-	//Bot::maxPossibleMoves = std::max(Bot::maxPossibleMoves, possibleMoveSize);
-	//Bot::maxValidMoves = std::max(Bot::maxValidMoves, validMoveSize);
-	/*Bot::timeMutex.lock();
-	double delta = time - Bot::timeMean;
-	Bot::timeMean += delta / Bot::timeCounter;
-	double delta2 = time - Bot::timeMean;
-	Bot::timeM2 += delta * delta2;
-	Bot::timeMutex.unlock();*/
-}
-
-void Bot::finalizeTimings() {
-	Bot::timeVariance = Bot::timeM2 / Bot::timeCounter;
+    while(prev_value < value && !maximum_value.compare_exchange_weak(prev_value, value));
 }
 
 Bot::Bot() {
@@ -79,14 +49,13 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 		return std::accumulate(situation.fields.begin(), situation.fields.end(), 0, addFigureWeight);
 	};
 	if (depth == 0) {
-		std::clock_t c_start = std::clock();
 		std::vector<Move> possibleMoves = situation.getValidMoves();
 		if (loud) {
 			std::cout << "Possible Moves:";
 			std::for_each(possibleMoves.begin(), possibleMoves.end(), [](Move& move){ std::cout << " " << move; });
 			std::cout << "\n";
 		}
-		auto validateMove = [&situation = std::as_const(situation)](const Move& move){
+		auto validateMove = [&situation](const Move& move){
 			Board new_situation = situation.applyMove(move, false);
 			auto tmp = new_situation.getNextPiece(OwnKing, 0);
 			return tmp < 64 && !new_situation.isCheck();
@@ -97,7 +66,6 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 				validMoves.push_back(std::make_tuple(i, -getAssessment(situation.applyMove(i)), 0));
 			}
 		}
-		//std::copy_if(possibleMoves.begin(), possibleMoves.end(), std::back_inserter(validMoves), validateMove);
 		if (loud) {
 			std::cout << "Valid Moves:";
 			std::for_each(validMoves.begin(), validMoves.end(), [](auto& move){ std::cout << " " << std::get<0>(move); });
@@ -106,16 +74,10 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 		if (validMoves.empty()) {
 			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max());
 		}
-		/*std::vector<int> assessments;
-		std::transform(validMoves.begin(), validMoves.end(), std::back_inserter(assessments), [&getAssessment, &situation](const Move& move){return -getAssessment(situation.applyMove(move, true)); });
-		std::size_t pos = std::distance(assessments.begin(), std::max_element(assessments.begin(), assessments.end()));*/
-		Bot::updateTimings(std::clock() - c_start, possibleMoves.size(), validMoves.size());
 		return *std::max_element(validMoves.begin(), validMoves.end(), [](auto a, auto b){return std::get<1>(a) < std::get<1>(b);});
-		//return std::make_tuple(validMoves[pos], assessments[pos]);
 	} else {
 		std::vector<Move> possibleMoves = situation.getValidMoves();
-		//std::vector<Move> validMoves;
-		auto validateMove = [&situation = std::as_const(situation)](const Move& move){
+		auto validateMove = [&situation](const Move& move){
 			Board new_situation = situation.applyMove(move, false);
 			auto tmp = new_situation.getNextPiece(OwnKing, 0);
 			return tmp < 64 && !new_situation.isThreatened(tmp);
@@ -126,7 +88,6 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 				validMoves.push_back(std::make_tuple(i, -getAssessment(situation.applyMove(i)), 0));
 			}
 		}
-		//std::copy_if(possibleMoves.begin(), possibleMoves.end(), std::back_inserter(validMoves), validateMove);
 		if (validMoves.empty()) {
 			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max());
 		}
@@ -134,8 +95,9 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 			for (auto& it : validMoves) {
 				std::tie(std::ignore, std::get<1>(it), std::get<2>(it)) = this->getQuickMove(situation.applyMove(std::get<0>(it), false), 0);
 			}
-			std::nth_element(validMoves.begin(), validMoves.begin() + std::max(std::min(validMoves.size() / 2, 20ul - depth), 4ul), validMoves.end(), [](const auto& a, const auto& b){ return std::get<1>(a) > std::get<1>(b); });
-			validMoves.resize(std::max(std::min(validMoves.size() / 2, 20ul - depth), 4ul));
+			auto tmp = std::max(std::min(validMoves.size() / 2, 20ul - depth), 4ul);
+			std::nth_element(validMoves.begin(), validMoves.begin() + tmp, validMoves.end(), [](const auto& a, const auto& b){ return std::get<1>(a) > std::get<1>(b); });
+			validMoves.resize(tmp);
 		}
 		for (auto& it : validMoves) {
 			std::tie(std::ignore, std::get<1>(it), std::get<2>(it)) = this->getQuickMove(situation.applyMove(std::get<0>(it), true), depth - 1);

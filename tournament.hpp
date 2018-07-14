@@ -1,8 +1,8 @@
+#pragma once
+
 #include <list>
 #include <vector>
 #include "bot.hpp"
-
-#pragma once
 
 enum outcome {
 	notPlayed = 0,

@@ -1,11 +1,11 @@
+#pragma once
+
 #include <array>
 #include <functional>
 #include <map>
 #include <sstream>
 #include <string>
 #include <vector>
-
-#pragma once
 
 enum piece {
 	None = 0,

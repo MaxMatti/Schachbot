@@ -1,3 +1,5 @@
+#pragma once
+
 #include <atomic>
 #include <ctime>
 #include <mutex>
@@ -7,26 +9,12 @@
 #include "board.hpp"
 #include "move.hpp"
 
-#pragma once
-
 class Bot {
 private:
 	// Board -> Move, depth, strength
 	std::array<int, 128> values;
 
 public:
-	static std::atomic<unsigned long long int> timeSum;
-	static std::atomic<unsigned long int> timeCounter;
-	static std::atomic<unsigned long int> maxPossibleMoves;
-	static std::atomic<unsigned long int> maxValidMoves;
-	static double timeMean;
-	static double timeM2;
-	static double timeVariance;
-	static std::mutex timeMutex;
-
-	static void updateTimings(const unsigned long long int time, const unsigned long int possibleMoveSize, const unsigned long int validMoveSize);
-	static void finalizeTimings();
-
 	Bot();
 	Bot(const Bot& previous);
 	Bot(std::array<int, 128> values) : values(values) {};

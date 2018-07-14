@@ -1,6 +1,6 @@
-#include "board.hpp"
-
 #pragma once
+
+#include "board.hpp"
 
 class Move {
 private:

@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <iostream>
-#include <set>
 #include <string>
 #include "board.hpp"
 #include "move.hpp"
@@ -319,131 +318,125 @@ std::vector<Move> Board::getValidMoves(const unsigned char pos) const {
 				addPawnMoves(result, pos, pos-9);
 			}
 		} else if (this->fields[pos] == OwnKnight) {
-			std::set<char> movingTo = {-17, -15, -10, -6, 6, 10, 15, 17};
+			std::array<char, 8> movingTo = {-17, -15, -10, -6, 6, 10, 15, 17};
 			if (pos / 8 < 2) {
-				movingTo.erase((char) -17);
-				movingTo.erase((char) -15);
+				movingTo[0] = 0; // -17
+				movingTo[1] = 0; // -15
 				if (pos / 8 < 1) {
-					movingTo.erase((char) -10);
-					movingTo.erase((char) -6);
+					movingTo[2] = 0; // -10
+					movingTo[3] = 0; // -6
 				}
 			}
 			if (pos / 8 > 5) {
-				movingTo.erase((char) 17);
-				movingTo.erase((char) 15);
+				movingTo[7] = 0; // 17
+				movingTo[6] = 0; // 15
 				if (pos / 8 > 6) {
-					movingTo.erase((char) 10);
-					movingTo.erase((char) 6);
+					movingTo[5] = 0; // 10
+					movingTo[4] = 0; // 6
 				}
 			}
 			if (pos % 8 < 2) {
-				movingTo.erase((char) -10);
-				movingTo.erase((char) 6);
+				movingTo[2] = 0; // -10
+				movingTo[4] = 0; // 6
 				if (pos % 8 < 1) {
-					movingTo.erase((char) -17);
-					movingTo.erase((char) 15);
+					movingTo[0] = 0; // -17
+					movingTo[6] = 0; // 15
 				}
 			}
 			if (pos % 8 > 5) {
-				movingTo.erase((char) -6);
-				movingTo.erase((char) 10);
+				movingTo[3] = 0; // -6
+				movingTo[5] = 0; // 10
 				if (pos % 8 > 6) {
-					movingTo.erase((char) -15);
-					movingTo.erase((char) 17);
+					movingTo[1] = 0; // -15
+					movingTo[7] = 0; // 17
 				}
 			}
 			for (auto i : movingTo) {
-				if (!(this->fields[pos + i] & Own)) {
+				if (i && !(this->fields[pos + i] & Own)) {
 					result.emplace_back(pos, pos + i);
 				}
 			}
 		} else if (this->fields[pos] == OwnKing) {
-			std::set<char> movingTo = {-9, -8, -7, -1, 1, 7, 8, 9};
+			std::array<char, 14> movingTo = {-9, -8, -7, -1, 1, 7, 8, 9, 0, 0, 0, 0, 0, 0};
 			if (pos / 8 == 0) {
-				movingTo.erase((char) -9);
-				movingTo.erase((char) -8);
-				movingTo.erase((char) -7);
+				movingTo[0] = 0; // -9
+				movingTo[1] = 0; // -8
+				movingTo[2] = 0; // -7
 			}
 			if (pos / 8 == 7) {
-				movingTo.erase((char) 9);
-				movingTo.erase((char) 8);
-				movingTo.erase((char) 7);
+				movingTo[7] = 0; // 9
+				movingTo[6] = 0; // 8
+				movingTo[5] = 0; // 7
 			}
 			if (pos % 8 == 0) {
-				movingTo.erase((char) -9);
-				movingTo.erase((char) -1);
-				movingTo.erase((char) 7);
+				movingTo[0] = 0; // -9
+				movingTo[3] = 0; // -1
+				movingTo[5] = 0; // 7
 			}
 			if (pos % 8 == 7) {
-				movingTo.erase((char) -7);
-				movingTo.erase((char) 1);
-				movingTo.erase((char) 9);
+				movingTo[2] = 0; // -7
+				movingTo[4] = 0; // 1
+				movingTo[7] = 0; // 9
 			}
+			// TODO: the following castling code looks ugly and some of it redundand
 			if (!this->isThreatened(pos)) {
-				if (this->castling[0] == true && this->fields[61] == None && this->fields[62] == None && this->fields[63] == Rook && !this->isThreatened(62)) {
+				if (this->castling[0] == true && this->fields[61] == None && this->fields[62] == None && this->fields[63] == Rook && !this->isThreatened(62) && !this->isThreatened(61)) {
 					if (pos == 60) {
-						movingTo.insert((char) 2);
+						movingTo[8] = 2;
 					} else if (pos == 59 && this->fields[60] == None) {
-						movingTo.insert((char) 3);
+						movingTo[9] = 3;
 					}
 				}
 				if (this->castling[1] == true && this->fields[58] == None && this->fields[57] == None && this->fields[56] == Rook && !this->isThreatened(57)) {
 					if (pos == 59) {
-						movingTo.insert((char) -2);
+						movingTo[10] = -2;
 					} else if (pos == 60 && this->fields[59] == None) {
-						movingTo.insert((char) -3);
+						movingTo[11] = -3;
 					}
 
 				}
 			}
 			if (this->castling[0] == true && !this->isThreatened(pos) && (this->fields[60] == None || this->fields[60] == OwnKing) && this->fields[61] == None && this->fields[62] == None && this->fields[63] == OwnRook) {
-				movingTo.insert((char) 2 + this->fields[60] == None);
+				movingTo[12] = 2 + this->fields[60] == None;
 			}
 			if (this->castling[1] == true && (this->fields[59] == None || this->fields[59] == OwnKing) && this->fields[58] == None && this->fields[57] == None && this->fields[56] == OwnRook) {
-				movingTo.insert((char) -3 + this->fields[60] == OwnKing);
+				movingTo[13] = -3 + this->fields[60] == OwnKing;
 			}
 			for (auto i : movingTo) {
-				if (!(this->fields[pos + i] & Own)) {
+				if (i && !(this->fields[pos + i] & Own)) {
 					result.emplace_back(pos, pos + i);
 				}
 			}
 		} else {
-			std::set<char> directions;
+			std::array<char, 8> directions = {0, 0, 0, 0, 0, 0, 0, 0};
 			if ((this->fields[pos] & OwnBishop) == OwnBishop) {
-				directions.insert((char) -9);
-				directions.insert((char) -7);
-				directions.insert((char) 7);
-				directions.insert((char) 9);
+				directions[0] = -9;
+				directions[1] = -7;
+				directions[2] = 7;
+				directions[3] = 9;
 			}
 			if ((this->fields[pos] & OwnRook) == OwnRook) {
-				directions.insert((char) -8);
-				directions.insert((char) -1);
-				directions.insert((char) 1);
-				directions.insert((char) 8);
+				directions[4] = -8;
+				directions[5] = -1;
+				directions[6] = 1;
+				directions[7] = 8;
 			}
-			// TODO: left and right edge detection is an ugly hack and probably way too slow
 			for (auto direction : directions) {
-				for (char newPos = pos + direction; newPos >= 0 && newPos < 64 && !(newPos % 8 == 7 && (direction + 16) % 8 == 7) && !(newPos % 8 == 0 && (direction + 16) % 8 == 1); newPos += direction) {
-					if (this->fields[newPos] & Own) {
-						break;
-					} else {
-						result.emplace_back(pos, newPos);
-						if (this->fields[newPos] & Enemy) {
+				if (direction) {
+					for (unsigned char i = 1; i < getDirectionSize(pos, direction); ++i) {
+						if (this->fields[pos + i * direction] & Own) {
 							break;
+						} else {
+							result.emplace_back(pos, pos + i * direction);
+							if (this->fields[pos + i * direction] & Enemy) {
+								break;
+							}
 						}
 					}
 				}
 			}
-			// TODO: castling
 		}
-	}/*
-	if (result.size() > 0) {
-		std::cout << result.size() << " moves for " << this->fields[pos] << ": ";
-		for (auto i : result) {
-			std::cout << i.invert() << ", ";
-		}
-		std::cout << "\n";
-	}*/
+	}
 	return result;
 }
 
@@ -614,41 +607,41 @@ bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
 	}
 
 	// Knight
-	std::set<char> movingFrom = {-17, -15, -10, -6, 6, 10, 15, 17};
+	std::array<char, 8> movingFrom = {-17, -15, -10, -6, 6, 10, 15, 17};
 	if (pos / 8 < 2) {
-		movingFrom.erase((char) -17);
-		movingFrom.erase((char) -15);
+		movingFrom[0] = 0; // -17
+		movingFrom[1] = 0; // -15
 		if (pos / 8 < 1) {
-			movingFrom.erase((char) -10);
-			movingFrom.erase((char) -6);
+			movingFrom[2] = 0; // -10
+			movingFrom[3] = 0; // -6
 		}
 	}
 	if (pos / 8 > 5) {
-		movingFrom.erase((char) 17);
-		movingFrom.erase((char) 15);
+		movingFrom[7] = 0; // 17
+		movingFrom[6] = 0; // 15
 		if (pos / 8 > 6) {
-			movingFrom.erase((char) 10);
-			movingFrom.erase((char) 6);
+			movingFrom[5] = 0; // 10
+			movingFrom[4] = 0; // 6
 		}
 	}
 	if (pos % 8 < 2) {
-		movingFrom.erase((char) -10);
-		movingFrom.erase((char) 6);
+		movingFrom[2] = 0; // -10
+		movingFrom[4] = 0; // 6
 		if (pos % 8 < 1) {
-			movingFrom.erase((char) -17);
-			movingFrom.erase((char) 15);
+			movingFrom[0] = 0; // -17
+			movingFrom[6] = 0; // 15
 		}
 	}
 	if (pos % 8 > 5) {
-		movingFrom.erase((char) -6);
-		movingFrom.erase((char) 10);
+		movingFrom[3] = 0; // -6
+		movingFrom[5] = 0; // 10
 		if (pos % 8 > 6) {
-			movingFrom.erase((char) -15);
-			movingFrom.erase((char) 17);
+			movingFrom[1] = 0; // -15
+			movingFrom[7] = 0; // 17
 		}
 	}
 	for (auto i : movingFrom) {
-		if (this->fields[pos + i] == (opponent | Knight)) {
+		if (i && this->fields[pos + i] == (opponent | Knight)) {
 			return true;
 		}
 	}
@@ -843,41 +836,43 @@ std::vector<char> Board::getThreatRelevantPositions(const unsigned char pos) con
 	}
 
 	// Knight
-	std::set<char> movingFrom = {-17, -15, -10, -6, 6, 10, 15, 17};
+	std::array<char, 8> movingFrom = {-17, -15, -10, -6, 6, 10, 15, 17};
 	if (pos / 8 < 2) {
-		movingFrom.erase((char) -17);
-		movingFrom.erase((char) -15);
+		movingFrom[0] = 0; // -17
+		movingFrom[1] = 0; // -15
 		if (pos / 8 < 1) {
-			movingFrom.erase((char) -10);
-			movingFrom.erase((char) -6);
+			movingFrom[2] = 0; // -10
+			movingFrom[3] = 0; // -6
 		}
 	}
 	if (pos / 8 > 5) {
-		movingFrom.erase((char) 17);
-		movingFrom.erase((char) 15);
+		movingFrom[7] = 0; // 17
+		movingFrom[6] = 0; // 15
 		if (pos / 8 > 6) {
-			movingFrom.erase((char) 10);
-			movingFrom.erase((char) 6);
+			movingFrom[5] = 0; // 10
+			movingFrom[4] = 0; // 6
 		}
 	}
 	if (pos % 8 < 2) {
-		movingFrom.erase((char) -10);
-		movingFrom.erase((char) 6);
+		movingFrom[2] = 0; // -10
+		movingFrom[4] = 0; // 6
 		if (pos % 8 < 1) {
-			movingFrom.erase((char) -17);
-			movingFrom.erase((char) 15);
+			movingFrom[0] = 0; // -17
+			movingFrom[6] = 0; // 15
 		}
 	}
 	if (pos % 8 > 5) {
-		movingFrom.erase((char) -6);
-		movingFrom.erase((char) 10);
+		movingFrom[3] = 0; // -6
+		movingFrom[5] = 0; // 10
 		if (pos % 8 > 6) {
-			movingFrom.erase((char) -15);
-			movingFrom.erase((char) 17);
+			movingFrom[1] = 0; // -15
+			movingFrom[7] = 0; // 17
 		}
 	}
 	for (auto i : movingFrom) {
-		result.push_back(pos + i);
+		if (i) {
+			result.push_back(pos + i);
+		}
 	}
 
 	return result;
