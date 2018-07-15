@@ -55,6 +55,10 @@ private:
 	std::array<bool, 8> enPassant;
 	std::array<bool, 2> check;
 	std::array<unsigned char, 2> kingPos;
+	bool isThreatenedByRook(const unsigned char pos, const piece opponent) const;
+	bool isThreatenedByBishop(const unsigned char pos, const piece opponent) const;
+	bool isThreatenedByKnight(const unsigned char pos, const piece opponent) const;
+	bool isThreatenedByPawn(const unsigned char pos, const piece opponent) const;
 public:
 	Board();
 	Board(const Board & previous) : Board(previous, 0) {};

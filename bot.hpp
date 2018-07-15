@@ -15,6 +15,8 @@ private:
 	std::array<int, 128> values;
 
 public:
+	static std::atomic<std::size_t> maximumPossibleMoves;
+	static std::atomic<std::size_t> maximumValidMoves;
 	Bot();
 	Bot(const Bot& previous);
 	Bot(std::array<int, 128> values) : values(values) {};

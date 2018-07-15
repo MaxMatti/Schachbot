@@ -55,22 +55,22 @@ int main(int argc, char const *argv[]) {
 	initValues[EnemyKnight] = -3;
 	initValues[EnemyPawn] = -1;
 	Bot initBot(initValues);
-	std::string initBoard = "R       "
+	/*std::string initBoard = "R       "
 							"        "
 							"        "
 							"  k     "
 							"        "
 							"     K  "
 							"        "
-							"        ";
-	/*std::string initBoard = "rnbqkbnr"
+							"        ";*/
+	std::string initBoard = "rnbqkbnr"
 							"pppppppp"
 							"        "
 							"        "
 							"        "
 							"        "
 							"PPPPPPPP"
-							"RNBQKBNR";*/
+							"RNBQKBNR";
 	/*std::string initBoard = " k  n  r"
 							" pp   p "
 							"p  rN qp"
@@ -80,41 +80,41 @@ int main(int argc, char const *argv[]) {
 							"PPP  PP "
 							" KR R   ";*/
 	Board current_situation(initBoard);
-	bool invert = false;
 	while (current_situation.isValid()) {
 		std::cout << current_situation.display();
 		Move move;
-		for (int i = 0; i < 9; i += 2) {
+		for (unsigned int i = 0; i < 21; ++i) {
 			// std::cout << current_situation;
 			std::cout << std::right << std::setw(4) << i << ": ";
 			std::clock_t starttime = std::clock();
-			std::tie(move, std::ignore, i) = initBot.getQuickMove(current_situation, i, false);
-			unsigned long long int time = std::clock() - starttime;
-			std::cout << "(" << (double) time / CLOCKS_PER_SEC << "s) ";
-			Board tmp_situation = current_situation;
-			invert = false;
-			for (int j = i; j > 0; --j) {
-				if (invert) {
-					std::cout << move.invert() << " -> ";
-				} else {
-					std::cout << move << " -> ";
-				}
-				// std::cout << "\n" << tmp_situation.applyMove(move, invert);
-				tmp_situation = tmp_situation.applyMove(move, true);
-				move = std::get<0>(initBot.getQuickMove(tmp_situation, j, false));
-				invert = !invert;
-				std::flush(std::cout);
+			unsigned int tmp = 0;
+			std::tie(move, std::ignore, tmp) = initBot.getQuickMove(current_situation, i, false);
+			if (tmp < i) {
+				std::cout << tmp << "<" << i << "\n";
+				exit(0);
 			}
+			i = tmp;
+			unsigned long long int time = std::clock() - starttime;
+			std::cout << "(" << (double) time / CLOCKS_PER_SEC << "s, max: " << Bot::maximumPossibleMoves << "/" << Bot::maximumValidMoves << ") ";
 			std::cout << move << "\n";
 			std::flush(std::cout);
+			if ((double) time / CLOCKS_PER_SEC > 0.5) {
+				break;
+			}
 		}
-		break;
-		move = std::get<0>(initBot.getQuickMove(current_situation, 20, false));
-		current_situation = current_situation.applyMove(move, true);
 		if (move == Move()) {
 			break;
 		}
+		current_situation = current_situation.applyMove(move, true);
 	}
-	std::cout << current_situation.display();
+	auto validateMove = [&current_situation](const Move& move){
+		Board new_situation = current_situation.applyMove(move, false);
+		auto tmp = new_situation.getNextPiece(OwnKing, 0);
+		return tmp < 64 && !new_situation.isThreatened(tmp);
+	};
+	for (auto i : current_situation.getValidMoves()) {
+		std::cout << i << (validateMove(i) ? "   (valid)\n" : " (invalid)\n");
+	}
+	std::cout << current_situation.print();
 	return 0;
 }

@@ -580,7 +580,7 @@ bool Board::isValidMove(const std::string& move) const {
 	}
 }
 
-bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
+bool Board::isThreatenedByRook(const unsigned char pos, const piece opponent) const {
 	for (char direction : {-8, -1, 1, 8}) {
 		for (unsigned char i = 1; i < getDirectionSize(pos, direction); ++i) {
 			if ((this->fields[pos + i * direction] & (opponent | Rook)) == (opponent | Rook)) {
@@ -593,6 +593,10 @@ bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
 			return true;
 		}
 	}
+	return false;
+}
+
+bool Board::isThreatenedByBishop(const unsigned char pos, const piece opponent) const {
 	for (char direction : {-9, -7, 7, 9}) {
 		for (unsigned char i = 1; i < getDirectionSize(pos, direction); ++i) {
 			if ((this->fields[pos + i * direction] & (opponent | Bishop)) == (opponent | Bishop)) {
@@ -605,8 +609,10 @@ bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
 			return true;
 		}
 	}
+	return false;
+}
 
-	// Knight
+bool Board::isThreatenedByKnight(const unsigned char pos, const piece opponent) const {
 	std::array<char, 8> movingFrom = {-17, -15, -10, -6, 6, 10, 15, 17};
 	if (pos / 8 < 2) {
 		movingFrom[0] = 0; // -17
@@ -645,8 +651,10 @@ bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
 			return true;
 		}
 	}
+	return false;
+}
 
-	// Pawn
+bool Board::isThreatenedByPawn(const unsigned char pos, const piece opponent) const {
 	if (pos > 7) {
 		if ((pos & 7) != 0) {
 			if (this->fields[pos - 9] == (opponent | Pawn)) {
@@ -659,8 +667,11 @@ bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
 			}
 		}
 	}
-
 	return false;
+}
+
+bool Board::isThreatened(const unsigned char pos, const piece opponent) const {
+	return this->isThreatenedByRook(pos, opponent) || this->isThreatenedByBishop(pos, opponent) || this->isThreatenedByKnight(pos, opponent) || this->isThreatenedByPawn(pos, opponent);
 }
 
 void Board::updateThreats(const unsigned char from, const unsigned char to) {

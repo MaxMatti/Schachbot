@@ -7,6 +7,9 @@
 #include "bot.hpp"
 #include "move.hpp"
 
+std::atomic<std::size_t> Bot::maximumPossibleMoves(0);
+std::atomic<std::size_t> Bot::maximumValidMoves(0);
+
 template<typename T>
 void updateMaximum(std::atomic<T>& maximum_value, T const& value) noexcept {
     T prev_value = maximum_value;
@@ -58,7 +61,7 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 		auto validateMove = [&situation](const Move& move){
 			Board new_situation = situation.applyMove(move, false);
 			auto tmp = new_situation.getNextPiece(OwnKing, 0);
-			return tmp < 64 && !new_situation.isCheck();
+			return tmp < 64 && !new_situation.isThreatened(tmp);
 		};
 		std::vector<std::tuple<Move, int, unsigned int>> validMoves;
 		for (auto i : possibleMoves) {
@@ -71,8 +74,10 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 			std::for_each(validMoves.begin(), validMoves.end(), [](auto& move){ std::cout << " " << std::get<0>(move); });
 			std::cout << "\n";
 		}
+		updateMaximum(Bot::maximumPossibleMoves, possibleMoves.size());
+		updateMaximum(Bot::maximumValidMoves, validMoves.size());
 		if (validMoves.empty()) {
-			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max());
+			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max() - 1);
 		}
 		return *std::max_element(validMoves.begin(), validMoves.end(), [](auto a, auto b){return std::get<1>(a) < std::get<1>(b);});
 	} else {
@@ -88,12 +93,15 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 				validMoves.push_back(std::make_tuple(i, -getAssessment(situation.applyMove(i)), 0));
 			}
 		}
+		updateMaximum(Bot::maximumPossibleMoves, possibleMoves.size());
+		updateMaximum(Bot::maximumValidMoves, validMoves.size());
 		if (validMoves.empty()) {
-			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max());
+			return std::make_tuple(Move(), std::numeric_limits<int>::min() + 1, std::numeric_limits<unsigned int>::max() - 1);
 		}
 		if (depth > 1) {
 			for (auto& it : validMoves) {
-				std::tie(std::ignore, std::get<1>(it), std::get<2>(it)) = this->getQuickMove(situation.applyMove(std::get<0>(it), false), 0);
+				std::tie(std::ignore, std::get<1>(it), std::ignore) = this->getQuickMove(situation.applyMove(std::get<0>(it), false), 0);
+				std::get<1>(it) *= -1;
 			}
 			auto tmp = std::max(std::min(validMoves.size() / 2, 20ul - depth), 4ul);
 			std::nth_element(validMoves.begin(), validMoves.begin() + tmp, validMoves.end(), [](const auto& a, const auto& b){ return std::get<1>(a) > std::get<1>(b); });
