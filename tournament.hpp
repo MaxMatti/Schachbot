@@ -19,8 +19,8 @@ private:
 	void playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std::vector<std::tuple<Bot, int>>::iterator bot2, const bool rated, std::list<outcome>::reverse_iterator result);
 
 public:
-	Tournament() {};
-	Tournament(std::vector<std::tuple<Bot, int>> contestants) : contestants(contestants) {};
+	Tournament() {}
+	Tournament(std::vector<std::tuple<Bot, int>> contestants) : contestants(contestants) {}
 	Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator);
 	bool addContestant(const Bot& newContestant);
 	void evaluate(const bool loud);

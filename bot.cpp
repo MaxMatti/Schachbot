@@ -31,8 +31,6 @@ Bot::Bot() {
 	this->values[EnemyPawn] = -1;
 }
 
-Bot::Bot(const Bot& previous) : values(previous.values) {}
-
 Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator) : values(previous.values) {
 	std::uniform_real_distribution<float> distribution(0.0, 1.0);
 	for (int& i : this->values) {
@@ -119,8 +117,8 @@ std::tuple<Move, int, unsigned int> Bot::getQuickMove(const Board& situation, co
 std::ostream& operator<<(std::ostream& stream, const Bot& bot) {
 	stream << "Bot(";
 	for (std::size_t i = 0; i < bot.values.size(); ++i) {
-		if (getChessSymbol((piece) i) != "x") {
-			stream << (piece) i << ": " << bot.values[i] << ", ";
+		if (getChessSymbol(static_cast<piece>(i)) != "x") {
+			stream << static_cast<piece>(i) << ": " << bot.values[i] << ", ";
 		}
 	}
 	stream << ")";

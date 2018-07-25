@@ -18,8 +18,7 @@ public:
 	static std::atomic<std::size_t> maximumPossibleMoves;
 	static std::atomic<std::size_t> maximumValidMoves;
 	Bot();
-	Bot(const Bot& previous);
-	Bot(std::array<int, 128> values) : values(values) {};
+	Bot(std::array<int, 128> new_values) : values(new_values) {};
 	Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator);
 	std::tuple<Move, int, unsigned int> getQuickMove(const Board& situation, const unsigned int depth, const bool loud = false);
 

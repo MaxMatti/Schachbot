@@ -4,9 +4,9 @@
 
 class Move {
 private:
+	piece turn_to;
 	unsigned char from;
 	unsigned char to;
-	piece turn_to;
 public:
 	Move() : from(0), to(0), turn_to(None) {}
 	Move(unsigned char from, unsigned char to, piece turn_to = None) : from(from), to(to), turn_to(turn_to) {}

@@ -67,10 +67,10 @@ void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std:
 	board_history.emplace_back();
 	current_situation = board_history.rbegin();
 	Move current_move;
-	unsigned long long int timestep;
+	std::clock_t timestep;
 	while (true) {
 		timestep = std::clock();
-		for (int i = 0; i < 100 && ((double) std::clock() - timestep) < CLOCKS_PER_SEC * 0.01; ++i) {
+		for (int i = 0; i < 100 && (static_cast<double>(std::clock()) - timestep) < CLOCKS_PER_SEC * 0.01; ++i) {
 			std::tie(current_move, std::ignore, std::ignore) = std::get<0>(*bot1).getQuickMove(*current_situation, i);
 		}
 		new_situation = current_situation->applyMove(current_move, true);
@@ -94,8 +94,8 @@ void Tournament::playGame(std::vector<std::tuple<Bot, int>>::iterator bot1, std:
 		board_history.push_back(new_situation);
 		current_situation = board_history.rbegin();
 		timestep = std::clock();
-		for (int i = 0; i < 100 && ((double) std::clock() - timestep) < CLOCKS_PER_SEC * 0.01; ++i) {
-			std::tie(current_move, std::ignore, std::ignore) = std::get<0>(*bot2).getQuickMove(*current_situation, i);
+		for (int i = 0; i < 100 && (static_cast<double>(std::clock()) - timestep) < CLOCKS_PER_SEC * 0.01; ++i) {
+			std::tie(current_move, std::ignore, std::ignore) = std::get<0>(*bot2).getQuickMove(*current_situation, static_cast<unsigned int>(i));
 		}
 		new_situation = current_situation->applyMove(current_move, true);
 		if (!new_situation.isValid()) {
@@ -137,8 +137,6 @@ std::ostream& operator<<(std::ostream& stream, const outcome& result) {
 			break;
 		case lineBreak:
 			stream << '\n';
-			break;
-		default:
 			break;
 	}
 	return stream;
