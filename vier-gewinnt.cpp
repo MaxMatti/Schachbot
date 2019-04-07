@@ -59,11 +59,18 @@ struct Field {
 		return tmp.str();
 	}
 
+	template<std::uint8_t max_depth>
 	std::uint64_t botMove();
 
 	friend bool operator==(Field f1, Field f2);
 	friend bool operator!=(Field f1, Field f2);
 };
+
+Field reverse(Field input) {
+	Field output{input};
+	output.reverse();
+	return output;
+}
 
 struct ScoredMove {
 	Field field;
@@ -72,40 +79,43 @@ struct ScoredMove {
 	std::uint8_t score;
 };
 
-ScoredMove bestMove(Field field, std::uint8_t depth = 0) {
-	if (depth > 10) {
-		return ScoredMove{field, 0, 0, static_cast<std::uint8_t>(-1)};
-	}
-	field.reverse();
-	ScoredMove result;
-	result.field = field;
-	result.score = 0;
-	for (result.currentMove = 1; result.currentMove < (1 << 7); result.currentMove <<= 1) {
-		std::uint64_t currentPos = result.field.play(result.currentMove);
-		if (currentPos) {
-			if (playerWins(result.field.player1, currentPos)) {
-				result.bestMove = result.currentMove;
-				result.score = static_cast<std::uint8_t>(-1);
-				return result;
-			}
-			std::uint8_t currentScore = -bestMove(result.field, depth + 1).score;
-			if (currentScore < 128) {
-				++currentScore;
-			} else {
-				--currentScore;
-			}
-			if (currentScore > result.score) {
-				result.bestMove = result.currentMove;
-				result.score = currentScore;
-			}
-		}
+template<std::uint8_t depth>
+ScoredMove getBestMove(Field field) {
+	if constexpr (depth == 0) { // either use even numbers for the depth or change the "default" score.
+		return ScoredMove{field, 0, 0, static_cast<std::uint8_t>(-64)};
+	} else {
+		field.reverse();
+		ScoredMove result;
 		result.field = field;
+		result.score = 0;
+		for (result.currentMove = 1; result.currentMove < (1 << 7); result.currentMove <<= 1) {
+			std::uint64_t currentPos = result.field.play(result.currentMove);
+			if (currentPos) {
+				if (playerWins(result.field.player1, currentPos)) {
+					result.bestMove = result.currentMove;
+					result.score = static_cast<std::uint8_t>(-1);
+					return result;
+				}
+				std::uint8_t currentScore = -getBestMove<depth - 1>(result.field).score;
+				if (currentScore < 128) {
+					++currentScore;
+				} else {
+					--currentScore;
+				}
+				if (currentScore > result.score) {
+					result.bestMove = result.currentMove;
+					result.score = currentScore;
+				}
+			}
+			result.field = field;
+		}
+		return result;
 	}
-	return result;
 }
 
+template<std::uint8_t max_depth>
 std::uint64_t Field::botMove() {
-	return play(bestMove(*this).bestMove);
+	return play(getBestMove<max_depth>(::reverse(*this)).bestMove);
 }
 
 bool operator==(Field f1, Field f2) {
@@ -168,11 +178,18 @@ bool playerWins(const std::uint64_t& player, const std::uint64_t& lastMove) {
 	return false;
 }
 
-int main() {
+int main(int argc, char** argv) {
 	Field field;
 	int input;
 	std::uint64_t currentPlayerMove;
 	std::uint64_t currentBotMove;
+
+	int difficulty;
+	std::cout << "Choose a difficulty between 1 and 23 (perfect opponent). Note that the opponent gets slower with each difficulty. The default difficulty is 4.\n";
+	std::cin >> difficulty;
+	if (difficulty < 1 || difficulty > 23) {
+		std::cout << "Difficulty not between 1 and 23, using the default (4).\n";
+	}
 	do {
 		field.reverse();
 		std::cout << field.print();
@@ -181,7 +198,32 @@ int main() {
 			std::cin >> input;
 		}
 		field.reverse();
-		currentBotMove = field.botMove();
+		switch (difficulty) {
+			case 1: currentBotMove = field.botMove<4>(); break;
+			case 2: currentBotMove = field.botMove<6>(); break;
+			case 3: currentBotMove = field.botMove<8>(); break;
+			case 4: currentBotMove = field.botMove<10>(); break;
+			case 5: currentBotMove = field.botMove<12>(); break;
+			case 6: currentBotMove = field.botMove<14>(); break;
+			case 7: currentBotMove = field.botMove<16>(); break;
+			case 8: currentBotMove = field.botMove<18>(); break;
+			case 9: currentBotMove = field.botMove<20>(); break;
+			case 10: currentBotMove = field.botMove<22>(); break;
+			case 11: currentBotMove = field.botMove<24>(); break;
+			case 12: currentBotMove = field.botMove<26>(); break;
+			case 13: currentBotMove = field.botMove<28>(); break;
+			case 14: currentBotMove = field.botMove<30>(); break;
+			case 15: currentBotMove = field.botMove<32>(); break;
+			case 16: currentBotMove = field.botMove<34>(); break;
+			case 17: currentBotMove = field.botMove<36>(); break;
+			case 18: currentBotMove = field.botMove<38>(); break;
+			case 19: currentBotMove = field.botMove<40>(); break;
+			case 20: currentBotMove = field.botMove<42>(); break;
+			case 21: currentBotMove = field.botMove<44>(); break;
+			case 22: currentBotMove = field.botMove<46>(); break;
+			case 23: currentBotMove = field.botMove<48>(); break;
+			default: currentBotMove = field.botMove<10>(); break;
+		}
 		if (!currentBotMove) {
 			std::cerr << "Internal error.\n";
 			return 0;
