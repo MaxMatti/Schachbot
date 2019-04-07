@@ -1,14 +1,10 @@
-#include <bitset>
+#include <cstdlib>
+#include <cstring>
 #include <cassert>
 #include <iostream>
 #include <iterator>
-#include <limits>
 #include <sstream>
-#include <tuple>
-#include <unordered_map>
-#include <vector>
 
-#define MAXINT std::numeric_limits<unsigned long int>::max()
 bool playerWins(const std::uint64_t& player, const std::uint64_t& lastMove);
 
 struct Field {
@@ -178,26 +174,58 @@ bool playerWins(const std::uint64_t& player, const std::uint64_t& lastMove) {
 	return false;
 }
 
+void printUsage() {
+	std::cerr << "Usage:\n\tvier-gewinnt [-m|--machine-readable] [-d difficulty] [-h]\n\t-m\temits output designed for automatic analysis instead of readability.\n\t-d\tsets the difficulty to the number given, should be between 1 and 23.\n\t-h\tShows this message and quits.\n";
+}
+
 int main(int argc, char** argv) {
 	Field field;
 	int input;
 	std::uint64_t currentPlayerMove;
 	std::uint64_t currentBotMove;
 
-	int difficulty;
-	std::cout << "Choose a difficulty between 1 and 23 (perfect opponent). Note that the opponent gets slower with each difficulty. The default difficulty is 4.\n";
-	std::cin >> difficulty;
+	bool machine_interface = false;
+	int difficulty = 0;
+	if (argc > 1) {
+		for (int i = 1; i < argc; ++i) {
+			if (std::strncmp(argv[i], "-m", 2) == 0 || std::strncmp(argv[i], "--machine-readable", 18) == 0) {
+				machine_interface = true;
+			} else if (strncmp(argv[i], "-d", 2) == 0) {
+				if (i + 1 < argc) {
+					difficulty = atoi(argv[i + 1]);
+				} else {
+					printUsage();
+					return 0;
+				}
+			} else if (strncmp(argv[i], "-h", 2) == 0) {
+				printUsage();
+				return 0;
+			}
+		}
+	}
+	if (difficulty == 0) {
+		if (!machine_interface) {
+			std::cout << "Choose a difficulty between 1 and 23 (perfect opponent). Note that the opponent gets slower with each difficulty. The default difficulty is 4.\n";
+		}
+		std::cin >> difficulty;
+	}
 	if (difficulty < 1 || difficulty > 23) {
-		std::cout << "Difficulty not between 1 and 23, using the default (4).\n";
+		std::cerr << "Difficulty not between 1 and 23, using the default (4).\n";
+		difficulty = 4;
 	}
 	do {
 		field.reverse();
-		std::cout << field.print();
+		if (!machine_interface) {
+			std::cout << field.print();
+		}
 		std::cin >> input;
 		while ((input < 1 || input > 7 || !(currentPlayerMove = field.play(1 << (input - 1)))) && __builtin_popcountll(field.player1 | field.player2) < 49) {
 			std::cin >> input;
 		}
 		field.reverse();
+		if (playerWins(field.player2, currentPlayerMove) || __builtin_popcountll(field.player1 | field.player2) >= 49) {
+			break;
+		}
 		switch (difficulty) {
 			case 1: currentBotMove = field.botMove<4>(); break;
 			case 2: currentBotMove = field.botMove<6>(); break;
@@ -228,14 +256,19 @@ int main(int argc, char** argv) {
 			std::cerr << "Internal error.\n";
 			return 0;
 		}
+		if (machine_interface) {
+			std::cout << __builtin_ctzll(currentBotMove) % 7 + 1 << "\n";
+		}
 	} while (!playerWins(field.player1, currentBotMove) && !playerWins(field.player2, currentPlayerMove) && __builtin_popcountll(field.player1 | field.player2) < 49);
 	field.reverse();
-	if (playerWins(field.player1, currentPlayerMove)) {
-		std::cout << "Congratulations! You won!\n";
-	} else if (playerWins(field.player2, currentBotMove)) {
-		std::cout << "Sorry, you lost.\n";
-	} else {
-		std::cout << "It seems to be a draw.\n";
+	if (!machine_interface) {
+		if (playerWins(field.player1, currentPlayerMove)) {
+			std::cout << "Congratulations! You won!\n";
+		} else if (playerWins(field.player2, currentBotMove)) {
+			std::cout << "Sorry, you lost.\n";
+		} else {
+			std::cout << "Seems to be a draw.\n";
+		}
 	}
 	std::cout << field.print();
 	return 0;
