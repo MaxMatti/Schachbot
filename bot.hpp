@@ -11,16 +11,14 @@
 
 class Bot {
 private:
-	// Board -> Move, depth, strength
-	std::array<int, 128> values;
+	std::array<int, 15> values;
 
 public:
 	static std::atomic<std::size_t> maximumPossibleMoves;
 	static std::atomic<std::size_t> maximumValidMoves;
 	Bot();
-	Bot(std::array<int, 128> new_values) : values(new_values) {};
+	Bot(std::array<int, 15> new_values) : values(new_values) {};
 	Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator);
-	std::tuple<Move, int, unsigned int> getQuickMove(const Board& situation, const unsigned int depth, const bool loud = false);
 
 	friend std::ostream& operator<<(std::ostream& stream, const Bot& bot);
 	friend bool operator<(const Bot& bot1, const Bot& bot2);

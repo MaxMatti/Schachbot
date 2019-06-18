@@ -5,9 +5,7 @@
 #include <random>
 #include <set>
 #include "board.hpp"
-#include "bot.hpp"
 #include "move.hpp"
-#include "tournament.hpp"
 
 std::string read_board() {
 	std::string result;
@@ -31,8 +29,20 @@ std::string read_move() {
 	return result;
 }
 
-void signal_handler(int signal) {
+void signal_handler(int signal [[maybe_unused]]) {
 	exit(0);
+}
+
+template<bool amIWhite>
+Move getMove(Board<amIWhite> current_situation) {
+	std::string tmp;
+	while (tmp.length() != 4 && tmp.length() != 5) {
+		std::cin >> tmp;
+	}
+	std::uint64_t from = 1ul << (63 - (7 - (tmp[0] - (tmp[0] < 'I' ? 'A' : 'a')) + (tmp[1] - '1') * 8));
+	std::uint64_t to = 1ul << (63 - (7 - (tmp[2] - (tmp[2] < 'I' ? 'A' : 'a')) + (tmp[3] - '1') * 8));
+	piece turn_to = tmp.length() > 4 ? getPiece(tmp[4]) : None;
+	return Move{from, to, current_situation.at(from), turn_to};
 }
 
 int main(int argc, char const *argv[]) {
@@ -54,7 +64,6 @@ int main(int argc, char const *argv[]) {
 	initValues[EnemyBishop] = -3;
 	initValues[EnemyKnight] = -3;
 	initValues[EnemyPawn] = -1;
-	Bot initBot(initValues);
 	/*std::string initBoard = "R       "
 							"        "
 							"        "
@@ -79,42 +88,33 @@ int main(int argc, char const *argv[]) {
 							"     P P"
 							"PPP  PP "
 							" KR R   ";*/
-	Board current_situation(initBoard);
+	Board<true> current_situation(initBoard);
+	Board<false> other_situation;
 	while (current_situation.isValid()) {
-		std::cout << current_situation.display();
+		std::cout << current_situation;
 		Move move;
-		for (unsigned int i = 0; i < 21; ++i) {
-			// std::cout << current_situation;
-			std::cout << std::right << std::setw(4) << i << ": ";
-			std::clock_t starttime = std::clock();
-			unsigned int tmp = 0;
-			std::tie(move, std::ignore, tmp) = initBot.getQuickMove(current_situation, i, false);
-			if (tmp < i) {
-				std::cout << tmp << "<" << i << "\n";
-				exit(0);
-			}
-			i = tmp;
-			unsigned long long int time = std::clock() - starttime;
-			std::cout << "(" << (double) time / CLOCKS_PER_SEC << "s, max: " << Bot::maximumPossibleMoves << "/" << Bot::maximumValidMoves << ") ";
-			std::cout << move << "\n";
-			std::flush(std::cout);
-			if ((double) time / CLOCKS_PER_SEC > 0.5) {
-				break;
-			}
-		}
-		if (move == Move()) {
+		move = getMove(current_situation);
+		if (move == Move() || !current_situation.isValidMove(move)) {
 			break;
 		}
-		current_situation = current_situation.applyMove(move, true);
+		other_situation = current_situation.applyMove(move);
+		std::cout << other_situation;
+		std::vector<Move> validMoves;
+		other_situation.forEachValidMove([&](auto i) {
+			if (!other_situation.isValidMove(i)) {
+				std::cout << "invalid ";
+			}
+			std::cout << "move: " << i << "(" << other_situation.at(i.move_from) << "->" << other_situation.at(i.move_to) << ")" << std::endl;
+			validMoves.push_back(i);
+		});
+		auto chosenMove = validMoves.at(std::rand() % validMoves.size());
+		std::cout << "chose: " << chosenMove << std::endl;
+		current_situation = other_situation.applyMove(chosenMove);
 	}
-	auto validateMove = [&current_situation](const Move& move){
-		Board new_situation = current_situation.applyMove(move, false);
-		auto tmp = new_situation.getNextPiece(OwnKing, 0);
-		return tmp < 64 && !new_situation.isThreatened(tmp);
-	};
-	for (auto i : current_situation.getValidMoves()) {
-		std::cout << i << (validateMove(i) ? "   (valid)\n" : " (invalid)\n");
-	}
-	std::cout << current_situation.print();
+	current_situation.forEachValidMove([&](auto i) {
+		auto tmp = current_situation.applyMove(i);
+		std::cout << i << (tmp.isValid() ? "   (valid)\n" : " (invalid)\n");
+	});
+	std::cout << current_situation;
 	return 0;
 }

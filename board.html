@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;"" charset="utf-8"/>
+	<title>Schachfeld</title>
+</head>
+<body>
+	<table>
+		<tbody></tbody>
+	</table>
+	<div id="options">
+		Figure:<br />
+		<input type="radio" name="figure" value="king" id="figure_king" /><label for="figure_king">King</label><br />
+		<input type="radio" name="figure" value="queen" id="figure_queen" /><label for="figure_queen">Queen</label><br />
+		<input type="radio" name="figure" value="rook" id="figure_rook" /><label for="figure_rook">Rook</label><br />
+		<input type="radio" name="figure" value="bishop" id="figure_bishop" /><label for="figure_bishop">Bishop</label><br />
+		<input type="radio" name="figure" value="knight" id="figure_knight" /><label for="figure_knight">Knight</label><br />
+		<input type="radio" name="figure" value="pawn" id="figure_pawn" /><label for="figure_pawn">Pawn</label>
+	</div>
+	<script type="text/javascript">
+		function initField(e) {
+			var tbody = document.querySelector("tbody");
+			for (var i = 0; i < 8; ++i) {
+				var row = document.createElement("tr");
+				for (var j = 0; j < 8; ++j) {
+					var cell = document.createElement("td");
+					cell.style.width = "20px";
+					cell.style.height = "20px";
+					cell.style.backgroundColor = (i + j) % 2 == 0 ? "#ffffff" : "#aaaaaa";
+					cell.innerHTML = String.fromCharCode("a".charCodeAt(0) + j, "0".charCodeAt(0) + 8 - i);
+					cell.id = i + "-" + j;
+					cell.addEventListener("mouseover", function (i, j) { return function (e) { highlightFigure(i, j); }; } (i, j), true);
+					row.appendChild(cell);
+				}
+				tbody.appendChild(row);
+			}
+			tbody.addEventListener("mouseout", function (e) { highlightFigure(-1, -1); }, true);
+		}
+
+		function highlightFigure(x, y) {
+			if (x < 0 || y < 0 || x > 7 || y > 7) {
+				for (var i = 0; i < 8; ++i) {
+					for (var j = 0; j < 8; ++j) {
+						document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#ffffff" : "#aaaaaa";
+						document.getElementById(i + "-" + j).style.color = "#000000";
+					}
+				}
+			} else if (document.getElementById("figure_king").checked) {
+				for (var i = 0; i < 8; ++i) {
+					for (var j = 0; j < 8; ++j) {
+						if (x == i && y == j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = "#ff0000";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						} else if (Math.abs(x - i) <= 1 && Math.abs(y - j) <= 1) {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#666666" : "#444444";
+							document.getElementById(i + "-" + j).style.color = "#ffffff";
+						} else {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#ffffff" : "#aaaaaa";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						}
+					}
+				}
+			} else if (document.getElementById("figure_queen").checked) {
+				for (var i = 0; i < 8; ++i) {
+					for (var j = 0; j < 8; ++j) {
+						if (x == i && y == j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = "#ff0000";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						} else if (x == i || y == j || x - i == y - j || x + y == i + j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#666666" : "#444444";
+							document.getElementById(i + "-" + j).style.color = "#ffffff";
+						} else {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#ffffff" : "#aaaaaa";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						}
+					}
+				}
+			} else if (document.getElementById("figure_rook").checked) {
+				for (var i = 0; i < 8; ++i) {
+					for (var j = 0; j < 8; ++j) {
+						if (x == i && y == j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = "#ff0000";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						} else if (x == i || y == j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#666666" : "#444444";
+							document.getElementById(i + "-" + j).style.color = "#ffffff";
+						} else {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#ffffff" : "#aaaaaa";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						}
+					}
+				}
+			} else if (document.getElementById("figure_bishop").checked) {
+				for (var i = 0; i < 8; ++i) {
+					for (var j = 0; j < 8; ++j) {
+						if (x == i && y == j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = "#ff0000";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						} else if (x - i == y - j || x + y == i + j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#666666" : "#444444";
+							document.getElementById(i + "-" + j).style.color = "#ffffff";
+						} else {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#ffffff" : "#aaaaaa";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						}
+					}
+				}
+			} else if (document.getElementById("figure_knight").checked) {
+				for (var i = 0; i < 8; ++i) {
+					for (var j = 0; j < 8; ++j) {
+						if (x == i && y == j) {
+							document.getElementById(i + "-" + j).style.backgroundColor = "#ff0000";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						} else if (Math.abs(x - i) <= 2 && Math.abs(y - j) <= 2 && Math.abs(x - i) + Math.abs(y - j) == 3) {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#666666" : "#444444";
+							document.getElementById(i + "-" + j).style.color = "#ffffff";
+						} else {
+							document.getElementById(i + "-" + j).style.backgroundColor = (i + j) % 2 == 0 ? "#ffffff" : "#aaaaaa";
+							document.getElementById(i + "-" + j).style.color = "#000000";
+						}
+					}
+				}
+			}
+		}
+
+		window.addEventListener("load", initField, true);
+	</script>
+</body>
+</html>

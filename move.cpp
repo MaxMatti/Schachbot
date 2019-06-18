@@ -1,16 +1,20 @@
-#include <sstream>
 #include "move.hpp"
 
+#include <sstream>
+
 std::ostream& operator<<(std::ostream& stream, const Move& move) {
-	stream << (char) ('a' + move.from % 8) << 8 - move.from / 8 << "-" << (char) ('a' + move.to % 8) << 8 - move.to / 8;
+	std::ostringstream tmp;
+	tmp << static_cast<char>(__builtin_ctzll(move.move_from) % 8 + 'a') << 8 - __builtin_ctzll(move.move_from) / 8;
+	tmp << static_cast<char>(__builtin_ctzll(move.move_to) % 8 + 'a') << 8 - __builtin_ctzll(move.move_to) / 8;
+	stream << tmp.str();
 	return stream;
 }
-
-Move Move::invert() const {
-	Move result(63 - this->from, 63 - this->to, invertPiece(this->turn_to));
-	return result;
+/*
+std::ostream& operator<<(std::ostream& stream, const Move& move) {
+	stream << (char) ('a' + __builtin_ctzll(move.move_from) % 8) << 8 - __builtin_ctzll(move.move_from) / 8 << "-" << (char) ('a' + __builtin_ctzll(move.move_to) % 8) << 8 - __builtin_ctzll(move.move_to) / 8;
+	return stream;
 }
-
+*/
 bool Move::operator==(const Move& other) const {
-	return this->from == other.from && this->to == other.to && this->turn_to == other.turn_to;
+	return move_from == other.move_from && move_to == other.move_to && turn_to == other.turn_to;
 }
