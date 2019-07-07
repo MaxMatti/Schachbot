@@ -85,15 +85,15 @@ template <std::size_t depth, bool amIWhite>
 int Bot::getScore(
     Board<amIWhite> board, int bestPreviousScore [[maybe_unused]], int worstPreviousScore [[maybe_unused]]) {
     ++statistics[depth];
+    if (__builtin_popcountll(board.figures[OwnKing]) == 0) {
+        return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
+    }
+    if (__builtin_popcountll(board.figures[EnemyKing]) == 0) {
+        return std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+    }
     if constexpr (depth == 0) {
         int result{0};
         static_assert(arraySize<decltype(values)>() >= arraySize<decltype(board.figures)>());
-        if (__builtin_popcountll(board.figures[OwnKing]) == 0) {
-            return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
-        }
-        if (__builtin_popcountll(board.figures[EnemyKing]) == 0) {
-            return std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
-        }
         for (auto i : {OwnQueen, OwnRook, OwnBishop, OwnKnight, OwnPawn}) {
             result += __builtin_popcountll(board.figures[i]) * values[i] * values[OwnFigure];
         }
