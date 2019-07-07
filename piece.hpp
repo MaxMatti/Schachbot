@@ -100,28 +100,26 @@ constexpr piece getPiece(char input) {
     }
 }
 
-constexpr bool isKing(piece input) {
-    return input == OwnKing || input == EnemyKing;
+constexpr bool isKing(piece input) { return input == OwnKing || input == EnemyKing; }
+
+constexpr bool isQueen(piece input) { return input == OwnQueen || input == EnemyQueen; }
+
+constexpr bool isRook(piece input) { return input == OwnRook || input == EnemyRook; }
+
+constexpr bool isBishop(piece input) { return input == OwnBishop || input == EnemyBishop; }
+
+constexpr bool isKnight(piece input) { return input == OwnKnight || input == EnemyKnight; }
+
+constexpr bool isPawn(piece input) { return input == OwnPawn || input == EnemyPawn; }
+
+constexpr bool isOwn(piece input) {
+    return input == OwnKing || input == OwnQueen || input == OwnRook || input == OwnBishop || input == OwnKnight ||
+        input == OwnPawn || input == OwnFigure;
 }
 
-constexpr bool isQueen(piece input) {
-    return input == OwnQueen || input == EnemyQueen;
-}
-
-constexpr bool isRook(piece input) {
-    return input == OwnRook || input == EnemyRook;
-}
-
-constexpr bool isBishop(piece input) {
-    return input == OwnBishop || input == EnemyBishop;
-}
-
-constexpr bool isKnight(piece input) {
-    return input == OwnKnight || input == EnemyKnight;
-}
-
-constexpr bool isPawn(piece input) {
-    return input == OwnPawn || input == EnemyPawn;
+constexpr bool isEnemy(piece input) {
+    return input == EnemyKing || input == EnemyQueen || input == EnemyRook || input == EnemyBishop ||
+        input == EnemyKnight || input == EnemyPawn || input == EnemyFigure;
 }
 
 constexpr piece invertPiece(const piece input) {
@@ -165,4 +163,4 @@ struct hash<std::array<piece, size>> {
         return result;
     }
 };
-}
+} // namespace std
