@@ -3,6 +3,7 @@ import qbs
 CppApplication {
     consoleApplication: true
     cpp.cxxLanguageVersion: "c++17"
+    cpp.optimization: "fast"
     cpp.cxxStandardLibrary: "libc++"
     cpp.staticLibraries: ["c++", "c++abi"]
     cpp.cxxFlags: base.concat(

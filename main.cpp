@@ -9,8 +9,6 @@
 #include <random>
 #include <set>
 
-using time_point = std::chrono::steady_clock::time_point;
-
 std::string read_board() {
     std::string result;
     std::string tmp;
@@ -103,10 +101,6 @@ ostream& operator<<(ostream& stream, const vector<string>& objects) {
 }
 } // namespace std
 
-auto getMsSince(time_point start) {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
-}
-
 template <std::size_t depth, bool amIWhite, class P>
 void justificateMove(Bot& bot, Board<amIWhite>& board, P pos) {
     auto move = bot.getMove<depth, false>(board);
@@ -119,10 +113,8 @@ void justificateMove(Bot& bot, Board<amIWhite>& board, P pos) {
 
 template <std::size_t depth, bool loud, bool amIWhite>
 Move getMove(Bot& bot, Board<amIWhite>& board) {
-    auto start = std::chrono::steady_clock::now();
     std::cout << "Depth: " << depth << std::endl;
-    auto chosenMove = bot.getMove<depth, false>(board);
-    std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << "ms\nStats:\n" << bot.printStats();
+    auto chosenMove = bot.getMove<depth, loud>(board);
     bot.resetStats();
     if constexpr (loud) {
         std::vector<std::string> objs;

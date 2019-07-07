@@ -1,6 +1,27 @@
 #include "bot.hpp"
 #include "move.hpp"
 
+std::string printDuration(duration time) {
+    auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
+    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(time).count();
+    auto micros = std::chrono::duration_cast<std::chrono::microseconds>(time).count();
+    auto sec = std::chrono::duration_cast<std::chrono::seconds>(time).count();
+    if (sec > 1000) {
+        return std::to_string(sec) + "s";
+    }
+    else if (millis > 1000) {
+        return std::to_string(millis) + "ms";
+    }
+    else if (micros > 1000) {
+        return std::to_string(micros) + "us";
+    }
+    else {
+        return std::to_string(nanos) + "ns";
+    }
+}
+
+std::string printDurationSince(time_point start) { return printDuration(std::chrono::steady_clock::now() - start); }
+
 Bot::Bot() {
     values[OwnKing] = 1;
     values[OwnQueen] = 9;
@@ -31,13 +52,31 @@ Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& gene
     }
 }
 
-std::string Bot::printStats() const {
+std::string Bot::printStats(duration time) const {
+    std::vector<std::vector<std::string>> table;
     std::ostringstream result;
-    result << statistics.size();
-    auto width = result.str().size();
-    result.clear();
     for (std::size_t i = 0; i < statistics.size(); ++i) {
-        result << std::setw(width) << i << ": " << statistics[i] << "\n";
+        auto& currentLine = table.emplace_back();
+        currentLine.resize(6);
+        currentLine[0] = std::to_string(i);
+        currentLine[1] = ": ";
+        currentLine[2] = std::to_string(statistics[i]);
+        currentLine[3] = " (";
+        currentLine[4] = printDuration(time / statistics[i]);
+        currentLine[5] = ")\n";
+    }
+    std::vector<std::size_t> lengths;
+    lengths.resize(std::accumulate(
+        table.begin(), table.end(), 0ul, [](std::size_t value, auto line) { return std::max(value, line.size()); }));
+    for (std::size_t i = 0; i < lengths.size(); ++i) {
+        lengths[i] = std::accumulate(table.begin(), table.end(), 0ul, [&i](std::size_t value, auto line) {
+            return line.size() > i ? std::max(value, line[i].length()) : value;
+        });
+    }
+    for (const auto& line : table) {
+        for (std::size_t i = 0; i < line.size(); ++i) {
+            result << std::setw(lengths[i]) << line[i];
+        }
     }
     return result.str();
 }

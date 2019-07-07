@@ -3,6 +3,7 @@
 #include "board.hpp"
 #include "move.hpp"
 #include "piece.hpp"
+#include <chrono>
 #include <iomanip>
 #include <limits>
 #include <numeric>
@@ -21,6 +22,16 @@ constexpr std::size_t arraySize() {
     return ArraySizeImpl<A>::N;
 }
 
+using time_point = std::chrono::steady_clock::time_point;
+using duration = std::chrono::steady_clock::duration;
+
+std::string printDuration(duration time);
+std::string printDurationSince(time_point start);
+
+inline auto getMsSince(time_point start) {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+}
+
 struct Bot {
     std::array<int, 15> values;
     std::vector<std::size_t> statistics;
@@ -35,7 +46,7 @@ struct Bot {
     template <std::size_t depth, bool amIWhite>
     int getScore(Board<amIWhite> board, int bestPreviousScore, int worstPreviousScore);
 
-    std::string printStats() const;
+    std::string printStats(duration time) const;
     void resetStats();
 };
 
@@ -45,9 +56,9 @@ bool operator==(const Bot& bot1, const Bot& bot2);
 
 template <std::size_t depth, bool loud, bool amIWhite>
 Move Bot::getMove(Board<amIWhite> board) {
-    if (statistics.size() < depth) {
-        statistics.resize(depth);
-    }
+    auto start [[maybe_unused]] = std::chrono::steady_clock::now();
+    statistics.clear();
+    statistics.resize(depth);
     Move bestMove = board.getFirstValidMove();
     // This number needs to be converted between positive and negative without any loss, thus the formula.
     int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
@@ -59,10 +70,14 @@ Move Bot::getMove(Board<amIWhite> board) {
             bestScore = currentScore;
             bestMove = move;
         }
-        if constexpr (loud) {
+        /*if constexpr (loud) {
             std::cout << move << ": " << std::setw(12) << currentScore << "\n";
-        }
+        }*/
     });
+    if constexpr (loud) {
+        std::cout << "Chose " << bestMove << " in " << getMsSince(start) << "ms\nStats:\n"
+                  << printStats(std::chrono::steady_clock::now() - start);
+    }
     return bestMove;
 }
 

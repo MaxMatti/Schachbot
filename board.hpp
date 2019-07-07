@@ -366,14 +366,32 @@ constexpr void Board<amIWhite>::forEachKnightMove(F&& func) const {
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachPawnMove(F&& func) const {
+    auto moveFunc = [&](auto m) {
+        if (figures[None] & m.moveTo) {
+            func(m);
+            return true;
+        }
+        return false;
+    };
+    auto takeFunc = [&](auto m) {
+        if (figures[EnemyFigure] & m.moveTo) {
+            func(m);
+            return true;
+        }
+        return false;
+    };
     auto fig = figures[OwnPawn];
-    constexpr Direction pawnDirection = amIWhite ? N : S;
+    constexpr Direction moveDirection = amIWhite ? N : S;
+    constexpr Direction takeDirection1 = amIWhite ? NE : SE;
+    constexpr Direction takeDirection2 = amIWhite ? NW : SW;
     while (__builtin_popcountll(fig) != 0) {
         std::uint64_t currentPos = 1;
         currentPos <<= __builtin_ctzll(fig);
-        if (move<pawnDirection, 1>(currentPos, OwnPawn, func) && isInitialPawnPosition(currentPos)) {
-            move<pawnDirection, 2>(currentPos, OwnPawn, func);
+        if (move<moveDirection, 1>(currentPos, OwnPawn, moveFunc) && isInitialPawnPosition(currentPos)) {
+            move<moveDirection, 2>(currentPos, OwnPawn, moveFunc);
         }
+        move<takeDirection1, 1>(currentPos, OwnPawn, takeFunc);
+        move<takeDirection2, 1>(currentPos, OwnPawn, takeFunc);
         fig &= ~currentPos;
     }
 }
