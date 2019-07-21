@@ -7,12 +7,13 @@ CppApplication {
     cpp.cxxStandardLibrary: "libc++"
     cpp.staticLibraries: ["c++", "c++abi"]
     cpp.cxxFlags: base.concat(
+        "-pthread", // threading capabilities
         "--pedantic", // best C++17 compatibilty
         "-Wall", "-Wextra", // enable more warnings
-        "-ftemplate-backtrace-limit=0", // do not cut template backtraces
-        "-Wno-unknown-pragmas" // ignore unknown pragmas, TODO(mstaff): this doesn't seem to be working.
+        "-ftemplate-backtrace-limit=0" // do not cut template backtraces
     )
-    //cpp.driverFlags: ['-fsanitize=address,undefined']
+    cpp.linkerFlags: base.concat("-lpthread")
+    //cpp.driverFlags: base.concat("-fsanitize=address,undefined")
     files: [
         "board.hpp",
         "bot.cpp",
@@ -22,6 +23,8 @@ CppApplication {
         "move.hpp",
         "piece.cpp",
         "piece.hpp",
+        "tournament.cpp",
+        "tournament.hpp",
     ]
 
     Group {

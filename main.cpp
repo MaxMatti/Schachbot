@@ -1,6 +1,7 @@
 #include "board.hpp"
 #include "bot.hpp"
 #include "move.hpp"
+#include "tournament.hpp"
 #include <chrono>
 #include <cmath>
 #include <csignal>
@@ -31,7 +32,7 @@ std::string read_move() {
     return result;
 }
 
-void signal_handler(int signal [[maybe_unused]]) { exit(0); }
+void signal_handler(int signal[[maybe_unused]]) { exit(0); }
 
 template <bool amIWhite>
 Move getInputMove(Board<amIWhite> currentSituation) {
@@ -115,7 +116,7 @@ template <std::size_t depth, bool loud, bool amIWhite>
 Move getMove(Bot& bot, Board<amIWhite>& board) {
     std::cout << "Depth: " << depth << std::endl;
     auto chosenMove = bot.getMove<depth, loud>(board);
-    bot.resetStats();
+    // bot.resetStats();
     if constexpr (loud) {
         std::vector<std::string> objs;
         justificateMove<depth>(bot, board, std::back_inserter(objs));
@@ -127,33 +128,6 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
 
 int main(int argc, char const* argv[]) {
     std::signal(SIGINT, signal_handler);
-    if (argc < 1) {
-        std::cout << *argv << "\n";
-    }
-    std::array<int, 128> initValues = {0};
-    initValues[None] = 0;
-    initValues[OwnKing] = 1000;
-    initValues[OwnQueen] = 9;
-    initValues[OwnRook] = 5;
-    initValues[OwnBishop] = 3;
-    initValues[OwnKnight] = 3;
-    initValues[OwnPawn] = 1;
-    initValues[OwnFigure] = 1;
-    initValues[EnemyKing] = -initValues[OwnKing];
-    initValues[EnemyQueen] = -initValues[OwnQueen];
-    initValues[EnemyRook] = -initValues[OwnRook];
-    initValues[EnemyBishop] = -initValues[OwnBishop];
-    initValues[EnemyKnight] = -initValues[OwnKnight];
-    initValues[EnemyPawn] = -initValues[OwnPawn];
-    initValues[EnemyFigure] = -initValues[OwnFigure];
-    /*std::string initBoard = "R       "
-                                                    "        "
-                                                    "        "
-                                                    "  k     "
-                                                    "        "
-                                                    "     K  "
-                                                    "        "
-                                                    "        ";*/
     std::string initBoard =
         "rnbqkbnr"
         "pppppppp"
@@ -163,14 +137,6 @@ int main(int argc, char const* argv[]) {
         "        "
         "PPPPPPPP"
         "RNBQKBNR";
-    /*std::string initBoard = " k  n  r"
-                                                    " pp   p "
-                                                    "p  rN qp"
-                                                    "Q    p  "
-                                                    "   p    "
-                                                    "     P P"
-                                                    "PPP  PP "
-                                                    " KR R   ";*/
     Board<true> currentSituation(initBoard);
     Board<false> otherSituation;
     Bot currentBot;
@@ -184,45 +150,14 @@ int main(int argc, char const* argv[]) {
         otherSituation = currentSituation.applyMove(move);
         std::cout << otherSituation;
 
-        /*std::vector<Move> validMoves;
-        otherSituation.forEachValidMove([&](auto i) {
-            if (!otherSituation.isValidMove(i)) {
-                std::cout << "invalid ";
-            }
-            std::cout << "move: " << i << "(" << otherSituation.at(i.moveFrom) << "->" << otherSituation.at(i.moveTo)
-                      << ")" << std::endl;
-            validMoves.push_back(i);
-        });*/
-        // auto chosenMove = validMoves.at(std::rand() % validMoves.size());
-        auto start = std::chrono::steady_clock::now();
-        auto chosenMove = getMove<2, true>(currentBot, otherSituation);
         using namespace std::chrono_literals;
-        if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<4, true>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<6, true>(currentBot, otherSituation);
-        }
+        auto start = std::chrono::steady_clock::now();
+        auto chosenMove = getMove<6, true>(currentBot, otherSituation);
         if (std::chrono::steady_clock::now() - start < 1s) {
             chosenMove = getMove<8, true>(currentBot, otherSituation);
         }
         if (std::chrono::steady_clock::now() - start < 1s) {
             chosenMove = getMove<10, true>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<12, true>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<14, true>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<16, true>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<18, true>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<20, true>(currentBot, otherSituation);
         }
         std::flush(std::cout);
         currentSituation = otherSituation.applyMove(chosenMove);
@@ -232,5 +167,12 @@ int main(int argc, char const* argv[]) {
         std::cout << i << (tmp.isValid() ? "   (valid)\n" : " (invalid)\n");
     });
     std::cout << currentSituation;
+    Bot parent;
+    std::mt19937 engine;
+    Tournament tournament;
+    tournament.addContestant(Bot(parent, 0.1, engine));
+    tournament.addContestant(Bot(parent, 0.1, engine));
+    tournament.addContestant(Bot(parent, 0.1, engine));
+    tournament.evaluate(true);
     return 0;
 }

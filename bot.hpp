@@ -34,7 +34,7 @@ inline auto getMsSince(time_point start) {
 
 struct Bot {
     std::array<int, 15> values;
-    std::vector<std::size_t> statistics;
+    std::array<int, 15> strengths;
     Bot();
     Bot(std::array<int, 15> new_values)
         : values(new_values) {}
@@ -45,9 +45,6 @@ struct Bot {
 
     template <std::size_t depth, bool amIWhite>
     int getScore(Board<amIWhite> board, int bestPreviousScore, int worstPreviousScore);
-
-    std::string printStats(duration time) const;
-    void resetStats();
 };
 
 std::ostream& operator<<(std::ostream& stream, const Bot& bot);
@@ -57,8 +54,6 @@ bool operator==(const Bot& bot1, const Bot& bot2);
 template <std::size_t depth, bool loud, bool amIWhite>
 Move Bot::getMove(Board<amIWhite> board) {
     auto start [[maybe_unused]] = std::chrono::steady_clock::now();
-    statistics.clear();
-    statistics.resize(depth);
     Move bestMove = board.getFirstValidMove();
     // This number needs to be converted between positive and negative without any loss, thus the formula.
     int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
@@ -70,13 +65,9 @@ Move Bot::getMove(Board<amIWhite> board) {
             bestScore = currentScore;
             bestMove = move;
         }
-        /*if constexpr (loud) {
-            std::cout << move << ": " << std::setw(12) << currentScore << "\n";
-        }*/
     });
     if constexpr (loud) {
-        std::cout << "Chose " << bestMove << " in " << getMsSince(start) << "ms\nStats:\n"
-                  << printStats(std::chrono::steady_clock::now() - start);
+        std::cout << "Chose " << bestMove << " in " << getMsSince(start) << "ms\n";
     }
     return bestMove;
 }
@@ -84,7 +75,6 @@ Move Bot::getMove(Board<amIWhite> board) {
 template <std::size_t depth, bool amIWhite>
 int Bot::getScore(
     Board<amIWhite> board, int bestPreviousScore [[maybe_unused]], int worstPreviousScore [[maybe_unused]]) {
-    ++statistics[depth];
     if (__builtin_popcountll(board.figures[OwnKing]) == 0) {
         return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
     }
@@ -100,9 +90,9 @@ int Bot::getScore(
         for (auto i : {EnemyQueen, EnemyRook, EnemyBishop, EnemyKnight, EnemyPawn}) {
             result += __builtin_popcountll(board.figures[i]) * values[i] * values[EnemyFigure];
         }
-        board.forEachValidMove([&](const Move& move) { result += values[move.turnFrom]; });
+        board.forEachValidMove([&](const Move& move) { result += strengths[move.turnFrom]; });
         Board<!amIWhite> invertedBoard(board);
-        invertedBoard.forEachValidMove([&](const Move& move) { result += values[move.turnFrom]; });
+        invertedBoard.forEachValidMove([&](const Move& move) { result += strengths[move.turnFrom]; });
         return result;
     }
     else {

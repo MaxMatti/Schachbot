@@ -1,0 +1,16 @@
+{
+	"folders":
+	[
+		{
+			"path": "/home/max/Projekte/CPP/Schach"
+		}
+	],
+    "settings": {
+        "ClangFormat": {
+            "format_on_save": true
+        },
+        "tab_size": 4,
+        "translate_tabs_to_spaces": true,
+        "detect_indentation": false
+    }
+}
