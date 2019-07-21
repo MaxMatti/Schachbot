@@ -126,7 +126,7 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
     return chosenMove;
 }
 
-int main(int argc, char const* argv[]) {
+int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
     std::signal(SIGINT, signal_handler);
     std::string initBoard =
         "rnbqkbnr"
@@ -142,24 +142,28 @@ int main(int argc, char const* argv[]) {
     Bot currentBot;
     while (currentSituation.isValid()) {
         std::cout << currentSituation;
-        Move move;
-        move = getInputMove(currentSituation);
-        if (move == Move() || !currentSituation.isValidMove(move)) {
-            break;
-        }
-        otherSituation = currentSituation.applyMove(move);
-        std::cout << otherSituation;
-
         using namespace std::chrono_literals;
         auto start = std::chrono::steady_clock::now();
-        auto chosenMove = getMove<6, true>(currentBot, otherSituation);
+        auto chosenMove = getMove<6, false>(currentBot, currentSituation);
         if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<8, true>(currentBot, otherSituation);
+            chosenMove = getMove<8, false>(currentBot, currentSituation);
         }
         if (std::chrono::steady_clock::now() - start < 1s) {
-            chosenMove = getMove<10, true>(currentBot, otherSituation);
+            chosenMove = getMove<10, false>(currentBot, currentSituation);
         }
-        std::flush(std::cout);
+        std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms.\n";
+        otherSituation = currentSituation.applyMove(chosenMove);
+
+        std::cout << otherSituation;
+        start = std::chrono::steady_clock::now();
+        chosenMove = getMove<6, false>(currentBot, otherSituation);
+        if (std::chrono::steady_clock::now() - start < 1s) {
+            chosenMove = getMove<8, false>(currentBot, otherSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < 1s) {
+            chosenMove = getMove<10, false>(currentBot, otherSituation);
+        }
+        std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms.\n";
         currentSituation = otherSituation.applyMove(chosenMove);
     }
     currentSituation.forEachValidMove([&](auto i) {

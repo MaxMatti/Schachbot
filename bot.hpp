@@ -53,7 +53,7 @@ bool operator==(const Bot& bot1, const Bot& bot2);
 
 template <std::size_t depth, bool loud, bool amIWhite>
 Move Bot::getMove(Board<amIWhite> board) {
-    auto start [[maybe_unused]] = std::chrono::steady_clock::now();
+    auto start[[maybe_unused]] = std::chrono::steady_clock::now();
     Move bestMove = board.getFirstValidMove();
     // This number needs to be converted between positive and negative without any loss, thus the formula.
     int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
@@ -74,7 +74,7 @@ Move Bot::getMove(Board<amIWhite> board) {
 
 template <std::size_t depth, bool amIWhite>
 int Bot::getScore(
-    Board<amIWhite> board, int bestPreviousScore [[maybe_unused]], int worstPreviousScore [[maybe_unused]]) {
+    Board<amIWhite> board, int bestPreviousScore[[maybe_unused]], int worstPreviousScore[[maybe_unused]]) {
     if (__builtin_popcountll(board.figures[OwnKing]) == 0) {
         return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
     }
