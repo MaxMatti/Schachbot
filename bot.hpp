@@ -33,10 +33,11 @@ inline auto getMsSince(time_point start) {
 }
 
 struct Bot {
-    std::array<int, 15> values;
-    std::array<int, 15> strengths;
+    std::array<int, 16> values;
+    std::array<int, 16> strengths;
+    std::array<int, 16> weaknesses;
     Bot();
-    Bot(std::array<int, 15> new_values)
+    Bot(std::array<int, 16> new_values)
         : values(new_values) {}
     Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator);
 
@@ -45,6 +46,8 @@ struct Bot {
 
     template <std::size_t depth, bool amIWhite>
     int getScore(Board<amIWhite> board, int bestPreviousScore, int worstPreviousScore);
+
+    std::int64_t counter{0};
 };
 
 std::ostream& operator<<(std::ostream& stream, const Bot& bot);
@@ -53,7 +56,7 @@ bool operator==(const Bot& bot1, const Bot& bot2);
 
 template <std::size_t depth, bool loud, bool amIWhite>
 Move Bot::getMove(Board<amIWhite> board) {
-    auto start[[maybe_unused]] = std::chrono::steady_clock::now();
+    auto start [[maybe_unused]] = std::chrono::steady_clock::now();
     Move bestMove = board.getFirstValidMove();
     // This number needs to be converted between positive and negative without any loss, thus the formula.
     int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
@@ -74,11 +77,14 @@ Move Bot::getMove(Board<amIWhite> board) {
 
 template <std::size_t depth, bool amIWhite>
 int Bot::getScore(
-    Board<amIWhite> board, int bestPreviousScore[[maybe_unused]], int worstPreviousScore[[maybe_unused]]) {
-    if (__builtin_popcountll(board.figures[OwnKing]) == 0) {
+    Board<amIWhite> board, int bestPreviousScore [[maybe_unused]], int worstPreviousScore [[maybe_unused]]) {
+    if constexpr (depth == 0) {
+        ++counter;
+    }
+    if (board.figures[OwnKing] == 0) {
         return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
     }
-    if (__builtin_popcountll(board.figures[EnemyKing]) == 0) {
+    if (board.figures[EnemyKing] == 0) {
         return std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
     }
     if constexpr (depth == 0) {
@@ -90,26 +96,43 @@ int Bot::getScore(
         for (auto i : {EnemyQueen, EnemyRook, EnemyBishop, EnemyKnight, EnemyPawn}) {
             result += __builtin_popcountll(board.figures[i]) * values[i] * values[EnemyFigure];
         }
-        board.forEachValidMove([&](const Move& move) { result += strengths[move.turnFrom]; });
+        board.forEachValidMove([&](const Move& move) {
+            result += strengths[move.turnFrom] * strengths[OwnFigure];
+            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[EnemyFigure];
+        });
         Board<!amIWhite> invertedBoard(board);
-        invertedBoard.forEachValidMove([&](const Move& move) { result += strengths[move.turnFrom]; });
+        invertedBoard.forEachValidMove([&](const Move& move) {
+            result += strengths[move.turnFrom] * strengths[EnemyFigure];
+            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[OwnFigure];
+        });
         return result;
     }
     else {
         // this number needs to be within the range set by getMove for bestScore.
         int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()) + 1};
         int shallowScore = getScore<0>(board, bestPreviousScore, worstPreviousScore);
+        std::int64_t totalCounter = 1;
+        std::int64_t pruneCounter = 1;
+        std::int64_t totalScore = 0;
+        std::int64_t pruneScore = 0;
         board.forEachValidMove([&](const Move& move) {
             // alpha-beta-pruning
             if (bestScore >= bestPreviousScore) {
                 return;
             }
-            // double-move-pruning
+            // double-move-pruning and avoiding to run into check
             if constexpr (depth > 3) {
                 Board<amIWhite> doubleMovePruningBoard = board.applyMove(move);
+                if (doubleMovePruningBoard.isThreatened(doubleMovePruningBoard.figures[OwnKing])) {
+                    return;
+                }
                 int doubleMovePruningScore =
-                    getScore<depth - 4>(doubleMovePruningBoard, bestPreviousScore, worstPreviousScore);
-                if (doubleMovePruningScore < shallowScore) {
+                    getScore<depth % 2 + 2>(doubleMovePruningBoard, bestPreviousScore, worstPreviousScore);
+                ++totalCounter;
+                totalScore += doubleMovePruningScore;
+                if (doubleMovePruningScore < shallowScore * 2 + 100) {
+                    ++pruneCounter;
+                    pruneScore += doubleMovePruningScore;
                     return;
                 }
             }
@@ -119,6 +142,12 @@ int Bot::getScore(
                 bestScore = currentScore;
             }
         });
+        if constexpr (depth > 3) {
+            std::cout << std::setw(22 - depth) << depth << ": " << std::setw(depth) << totalCounter - pruneCounter
+                      << "/" << std::setw(4) << totalCounter << ": " << std::setw(12) << shallowScore << "/"
+                      << std::setw(12) << (totalScore - pruneScore) / (totalCounter - pruneCounter + 1) << "/"
+                      << std::setw(12) << totalScore / totalCounter << "\n";
+        }
         return bestScore;
     }
 }

@@ -23,6 +23,8 @@ std::string printDuration(duration time) {
 std::string printDurationSince(time_point start) { return printDuration(std::chrono::steady_clock::now() - start); }
 
 Bot::Bot() {
+    values[None] = 0;
+    values[AnyFigure] = 0;
     values[OwnKing] = 1000;
     values[OwnQueen] = 9;
     values[OwnRook] = 5;
@@ -37,13 +39,15 @@ Bot::Bot() {
     values[EnemyKnight] = -values[OwnKnight];
     values[EnemyPawn] = -values[OwnPawn];
     values[EnemyFigure] = values[OwnFigure];
+    strengths[None] = 0;
+    strengths[AnyFigure] = 0;
     strengths[OwnKing] = 1;
     strengths[OwnQueen] = 9;
     strengths[OwnRook] = 5;
     strengths[OwnBishop] = 3;
     strengths[OwnKnight] = 3;
     strengths[OwnPawn] = 1;
-    strengths[OwnFigure] = 1000;
+    strengths[OwnFigure] = 1;
     strengths[EnemyKing] = -strengths[OwnKing];
     strengths[EnemyQueen] = -strengths[OwnQueen];
     strengths[EnemyRook] = -strengths[OwnRook];
@@ -51,6 +55,22 @@ Bot::Bot() {
     strengths[EnemyKnight] = -strengths[OwnKnight];
     strengths[EnemyPawn] = -strengths[OwnPawn];
     strengths[EnemyFigure] = strengths[OwnFigure];
+    weaknesses[None] = 0;
+    weaknesses[AnyFigure] = 0;
+    weaknesses[OwnKing] = 1000;
+    weaknesses[OwnQueen] = 9;
+    weaknesses[OwnRook] = 5;
+    weaknesses[OwnBishop] = 3;
+    weaknesses[OwnKnight] = 3;
+    weaknesses[OwnPawn] = 1;
+    weaknesses[OwnFigure] = 1;
+    weaknesses[EnemyKing] = -weaknesses[OwnKing];
+    weaknesses[EnemyQueen] = -weaknesses[OwnQueen];
+    weaknesses[EnemyRook] = -weaknesses[OwnRook];
+    weaknesses[EnemyBishop] = -weaknesses[OwnBishop];
+    weaknesses[EnemyKnight] = -weaknesses[OwnKnight];
+    weaknesses[EnemyPawn] = -weaknesses[OwnPawn];
+    weaknesses[EnemyFigure] = weaknesses[OwnFigure];
 }
 
 Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator)

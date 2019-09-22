@@ -1,7 +1,6 @@
 #include "board.hpp"
 #include "bot.hpp"
 #include "move.hpp"
-#include "tournament.hpp"
 #include <chrono>
 #include <cmath>
 #include <csignal>
@@ -9,6 +8,9 @@
 #include <iostream>
 #include <random>
 #include <set>
+
+static std::chrono::steady_clock::time_point totalStart;
+static std::int64_t totalMoves;
 
 std::string read_board() {
     std::string result;
@@ -32,7 +34,10 @@ std::string read_move() {
     return result;
 }
 
-void signal_handler(int signal[[maybe_unused]]) { exit(0); }
+[[noreturn]] void signal_handler(int signal [[maybe_unused]]) {
+    std::cout << "Evaluated " << totalMoves << " Moves (" << (totalMoves / getMsSince(totalStart)) << "/ms).\n";
+    exit(0);
+}
 
 template <bool amIWhite>
 Move getInputMove(Board<amIWhite> currentSituation) {
@@ -60,21 +65,21 @@ ostream& operator<<(ostream& stream, const vector<string>& objects) {
     size_t height = accumulate(lines.begin(), lines.end(), 0ul, [](size_t height, const vector<string>& line) {
         return max(height, line.size());
     });
-    vector<size_t> lengths(lines.size());
+    vector<long> lengths(lines.size());
     transform(lines.begin(), lines.end(), lengths.begin(), [](const vector<string>& obj) {
-        return accumulate(obj.begin(), obj.end(), 0, [](size_t length, const string& line) {
+        return accumulate(obj.begin(), obj.end(), 0, [](long length, const string& line) {
             bool counting = true;
             // count all characters except those that represent terminal style information
-            return max<size_t>(length, count_if(line.begin(), line.end(), [&](char it) {
-                                   if (it == '\033') {
-                                       counting = false;
-                                   }
-                                   else if (it == 'm') {
-                                       counting = true;
-                                       return false;
-                                   }
-                                   return counting;
-                               }));
+            return max<long>(length, count_if(line.begin(), line.end(), [&](char it) {
+                                 if (it == '\033') {
+                                     counting = false;
+                                 }
+                                 else if (it == 'm') {
+                                     counting = true;
+                                     return false;
+                                 }
+                                 return counting;
+                             }));
         });
     });
     for (auto& line : lines) {
@@ -84,7 +89,7 @@ ostream& operator<<(ostream& stream, const vector<string>& objects) {
         for (size_t j = 0; j < lines.size(); ++j) {
             bool counting = true;
             // count all characters except those that represent terminal style information
-            std::size_t size = count_if(lines[j][i].begin(), lines[j][i].end(), [&](char it) {
+            long size = count_if(lines[j][i].begin(), lines[j][i].end(), [&](char it) {
                 if (it == '\033') {
                     counting = false;
                 }
@@ -94,7 +99,8 @@ ostream& operator<<(ostream& stream, const vector<string>& objects) {
                 }
                 return counting;
             });
-            stream << setw(lengths[j] + lines[j][i].length() - size + 1) << lines[j][i];
+            stream << setw(static_cast<int>(lengths[j] + static_cast<long>(lines[j][i].length()) - size + 1))
+                   << lines[j][i];
         }
         stream << "\n";
     }
@@ -126,8 +132,9 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
     return chosenMove;
 }
 
-int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
+int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     std::signal(SIGINT, signal_handler);
+    std::signal(SIGABRT, signal_handler);
     std::string initBoard =
         "rnbqkbnr"
         "pppppppp"
@@ -136,47 +143,134 @@ int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
         "        "
         "        "
         "PPPPPPPP"
-        "RNBQKBNR";
+        "RNBQKBNR"; /*
+     initBoard =
+         "rn    nr"
+         "   k ppp"
+         "p p     "
+         "    R   "
+         " b pN   "
+         "   b K N"
+         "  p  PPP"
+         "  B    R"; */
     Board<true> currentSituation(initBoard);
     Board<false> otherSituation;
     Bot currentBot;
-    while (currentSituation.isValid()) {
+    totalStart = std::chrono::steady_clock::now();
+    totalMoves = 0;
+    int sameCounter = 0;
+    while (currentSituation.isValid() && sameCounter < 10) {
         std::cout << currentSituation;
         using namespace std::chrono_literals;
         auto start = std::chrono::steady_clock::now();
-        auto chosenMove = getMove<6, false>(currentBot, currentSituation);
-        if (std::chrono::steady_clock::now() - start < 1s) {
+        totalMoves += currentBot.counter;
+        currentBot.counter = 0;
+        auto timeThreshold = 0.2s;
+        auto chosenMove = getMove<4, false>(currentBot, currentSituation);
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<6, false>(currentBot, currentSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<8, false>(currentBot, currentSituation);
         }
-        if (std::chrono::steady_clock::now() - start < 1s) {
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<10, false>(currentBot, currentSituation);
         }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<12, false>(currentBot, currentSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<14, false>(currentBot, currentSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<16, false>(currentBot, currentSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<18, false>(currentBot, currentSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<20, false>(currentBot, currentSituation);
+        }
         std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms.\n";
+        std::cout << "Evaluated " << currentBot.counter << " Moves (" << currentBot.counter / (getMsSince(start) + 1)
+                  << "/ms).\n";
+        decltype(otherSituation) tmp1 = std::move(otherSituation);
         otherSituation = currentSituation.applyMove(chosenMove);
+        if (otherSituation == tmp1) {
+            ++sameCounter;
+        }
+
+        if (!otherSituation.isValid()) {
+            break;
+        }
 
         std::cout << otherSituation;
         start = std::chrono::steady_clock::now();
-        chosenMove = getMove<6, false>(currentBot, otherSituation);
-        if (std::chrono::steady_clock::now() - start < 1s) {
+        totalMoves += currentBot.counter;
+        currentBot.counter = 0;
+        chosenMove = getMove<4, false>(currentBot, otherSituation);
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<6, false>(currentBot, otherSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<8, false>(currentBot, otherSituation);
         }
-        if (std::chrono::steady_clock::now() - start < 1s) {
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<10, false>(currentBot, otherSituation);
         }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<12, false>(currentBot, otherSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<14, false>(currentBot, otherSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<16, false>(currentBot, otherSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<18, false>(currentBot, otherSituation);
+        }
+        if (std::chrono::steady_clock::now() - start < timeThreshold) {
+            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
+            chosenMove = getMove<20, false>(currentBot, otherSituation);
+        }
         std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms.\n";
+        std::cout << "Evaluated " << currentBot.counter << " Moves (" << currentBot.counter / (getMsSince(start) + 1)
+                  << "/ms).\n";
+        decltype(currentSituation) tmp2 = std::move(currentSituation);
         currentSituation = otherSituation.applyMove(chosenMove);
+        if (currentSituation == tmp2) {
+            ++sameCounter;
+        }
     }
     currentSituation.forEachValidMove([&](auto i) {
         auto tmp = currentSituation.applyMove(i);
         std::cout << i << (tmp.isValid() ? "   (valid)\n" : " (invalid)\n");
     });
     std::cout << currentSituation;
-    Bot parent;
+    std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
+    /*Bot parent;
     std::mt19937 engine;
     Tournament tournament;
-    tournament.addContestant(Bot(parent, 0.1, engine));
-    tournament.addContestant(Bot(parent, 0.1, engine));
-    tournament.addContestant(Bot(parent, 0.1, engine));
-    tournament.evaluate(true);
+    tournament.addContestant(Bot(parent, 0.1f, engine));
+    tournament.addContestant(Bot(parent, 0.1f, engine));
+    tournament.addContestant(Bot(parent, 0.1f, engine));
+    tournament.evaluate(true);*/
+    signal_handler(0);
     return 0;
 }

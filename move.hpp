@@ -15,10 +15,18 @@ enum Direction : std::uint8_t {
     E = East,
     S = South,
     W = West,
+    NN = N + N,
+    EE = E + E,
+    SS = S + S,
+    WW = W + W,
     NE = N + E,
     SE = S + E,
     SW = S + W,
     NW = N + W,
+    NNN = NN + N,
+    EEE = EE + E,
+    SSS = SS + S,
+    WWW = WW + W,
     NNE = N + N + E,
     ENE = E + N + E,
     ESE = E + S + E,
@@ -28,6 +36,10 @@ enum Direction : std::uint8_t {
     WNW = W + N + W,
     NNW = N + N + W
 };
+
+constexpr Direction operator+(Direction l, Direction r) {
+    return static_cast<Direction>(static_cast<std::uint8_t>(l) + static_cast<std::uint8_t>(r));
+}
 
 struct Move {
     std::uint64_t moveFrom{0};
@@ -52,8 +64,14 @@ struct Move {
 };
 
 std::ostream& operator<<(std::ostream& stream, const Move& move);
-bool operator!=(const Move& l, const Move& r);
-bool operator==(const Move& l, const Move& r);
+
+constexpr bool operator!=(const Move& l, const Move& r) {
+    return l.moveFrom != r.moveFrom || l.moveTo != r.moveTo || l.turnFrom != r.turnFrom || l.turnTo != r.turnTo;
+}
+
+constexpr bool operator==(const Move& l, const Move& r) {
+    return l.moveFrom == r.moveFrom && l.moveTo == r.moveTo && l.turnFrom == r.turnFrom && l.turnTo == r.turnTo;
+}
 
 constexpr std::int8_t getIntDir(Direction dir) {
     std::int8_t result = 0;
@@ -89,7 +107,7 @@ constexpr bool contains(Direction haystack, Direction needle) { return haystack 
 constexpr bool containsTwice(Direction haystack, Direction needle) { return haystack & (needle << 1); }
 
 namespace hidden {
-constexpr std::uint64_t maskNone() { return -1; }
+constexpr std::uint64_t maskNone() { return -1ul; }
 
 template <std::uint8_t distance>
 constexpr std::uint64_t maskNorth() {
@@ -177,7 +195,7 @@ constexpr std::uint64_t getMask() {
 }
 
 template <std::int8_t distance, class F, std::uint64_t mask>
-bool move(std::uint64_t pos, piece p, F&& func) {
+bool checkedMove(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
     auto startPos = pos;
     pos &= mask;
     if constexpr (distance >= 64 || distance <= -64) {
@@ -189,32 +207,209 @@ bool move(std::uint64_t pos, piece p, F&& func) {
     else if constexpr (distance < 0) {
         pos <<= -distance;
     }
-    return pos && func(Move(startPos, pos, p));
+    return pos && func(Move(startPos, pos, turnFrom, turnTo));
+}
+
+template <std::int8_t distance, std::uint64_t mask>
+bool uncheckedMove(std::uint64_t pos) {
+    pos &= mask;
+    if constexpr (distance >= 64 || distance <= -64) {
+        return false;
+    }
+    else if constexpr (distance > 0) {
+        pos >>= distance;
+    }
+    else if constexpr (distance < 0) {
+        pos <<= -distance;
+    }
+    return pos;
+}
+
+template <Direction dir, std::uint8_t distance>
+constexpr bool isInDirection(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    std::uint64_t direction = static_cast<std::uint64_t>(static_cast<std::int64_t>(getIntDir(dir)));
+    for (std::uint64_t i = 1ul; i < distance + 1; ++i) {
+        if ((from + direction * i) & obstacles) {
+            return false;
+        }
+        if ((from + direction * i) & to) {
+            return true;
+        }
+    }
+    return false;
 }
 } // namespace hidden
 
 template <Direction dir, std::uint8_t distance, class F>
-bool move(std::uint64_t pos, piece p, F&& func) {
-    return hidden::move<distance * getIntDir(dir), F, hidden::getMask<dir, distance>()>(pos, p, std::forward<F>(func));
+bool checkedMove(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
+    return hidden::checkedMove<distance * getIntDir(dir), F, hidden::getMask<dir, distance>()>(
+        pos, turnFrom, turnTo, std::forward<F>(func));
+}
+
+template <Direction dir, std::uint8_t distance>
+bool uncheckedMove(std::uint64_t pos) {
+    return hidden::uncheckedMove<distance * getIntDir(dir), hidden::getMask<dir, distance>()>(pos);
 }
 
 template <Direction dir, std::uint8_t distance, class F>
-bool moveUntil(std::uint64_t pos, piece p, F&& func) {
+bool checkedMoveUntil(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
     if constexpr (distance > 1) {
-        if (!moveUntil<dir, distance - 1, F>(pos, p, std::forward<F>(func))) {
+        if (!checkedMoveUntil<dir, distance - 1, F>(pos, turnFrom, turnTo, std::forward<F>(func))) {
             return false;
         }
     }
-    return hidden::move<distance * getIntDir(dir), F, hidden::getMask<dir, distance>()>(pos, p, std::forward<F>(func));
+    return hidden::checkedMove<distance * getIntDir(dir), F, hidden::getMask<dir, distance>()>(
+        pos, turnFrom, turnTo, std::forward<F>(func));
+}
+
+template <Direction dir, std::uint8_t distance>
+bool uncheckedMoveUntil(std::uint64_t pos) {
+    if constexpr (distance > 1) {
+        if (!uncheckedMoveUntil<dir, distance - 1>(pos)) {
+            return false;
+        }
+    }
+    return hidden::uncheckedMove<distance * getIntDir(dir), hidden::getMask<dir, distance>()>(pos);
+}
+
+template <class F>
+constexpr bool forEachPos(std::uint64_t positions, F&& func) {
+    while (__builtin_popcountll(positions) != 0) {
+        std::uint64_t currentPos = 1;
+        currentPos <<= __builtin_ctzll(positions);
+        if (!func(currentPos)) {
+            return false;
+        }
+        positions &= ~currentPos;
+    }
+    return true;
+}
+
+constexpr bool isValidKingMove(std::uint64_t from, std::uint64_t to) {
+    assert(__builtin_popcountll(from) == 1);
+    assert(__builtin_popcountll(to) == 1);
+    auto fromOffset = __builtin_ctzll(from);
+    auto toOffset = __builtin_ctzll(to);
+    auto diff = fromOffset > toOffset ? fromOffset - toOffset : toOffset - fromOffset;
+    return diff == 0 || diff == 1 || diff == 7 || diff == 8 || diff == 9;
+}
+
+constexpr bool isValidQueenMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    assert(__builtin_popcountll(from) == 1);
+    obstacles &= ~from;
+    obstacles &= ~to;
+    bool result = false;
+    result |= hidden::isInDirection<N, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<E, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<S, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<W, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<NE, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<SE, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<SW, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<NW, 8>(from, to, obstacles);
+    return false;
+}
+
+constexpr bool isValidRookMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    assert(__builtin_popcountll(from) == 1);
+    obstacles &= ~from;
+    obstacles &= ~to;
+    bool result = false;
+    result |= hidden::isInDirection<N, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<E, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<S, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<W, 8>(from, to, obstacles);
+    return false;
+}
+
+constexpr bool isValidBishopMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    assert(__builtin_popcountll(from) == 1);
+    obstacles &= ~from;
+    obstacles &= ~to;
+    bool result = false;
+    result |= hidden::isInDirection<NE, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<SE, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<SW, 8>(from, to, obstacles);
+    result |= hidden::isInDirection<NW, 8>(from, to, obstacles);
+    return false;
+}
+
+constexpr bool isValidKnightMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    assert(__builtin_popcountll(from) == 1);
+    obstacles &= ~from;
+    obstacles &= ~to;
+    bool result = false;
+    result |= hidden::isInDirection<NNE, 1>(from, to, obstacles);
+    result |= hidden::isInDirection<ENE, 1>(from, to, obstacles);
+    result |= hidden::isInDirection<ESE, 1>(from, to, obstacles);
+    result |= hidden::isInDirection<SSE, 1>(from, to, obstacles);
+    result |= hidden::isInDirection<SSW, 1>(from, to, obstacles);
+    result |= hidden::isInDirection<WSW, 1>(from, to, obstacles);
+    result |= hidden::isInDirection<WNW, 1>(from, to, obstacles);
+    result |= hidden::isInDirection<NNW, 1>(from, to, obstacles);
+    return false;
 }
 
 template <bool amIWhite>
-bool isInLastRow(std::uint64_t pos) {
-    assert(__builtin_popcountll(pos) == 1 && "Can only check last row for one position at a time!");
+constexpr bool isInitialPawnPosition(std::uint64_t position) {
+    assert(__builtin_popcountll(position) == 1);
     if constexpr (amIWhite) {
-        return pos & 0b11111111ul << 56;
+        return (0b11111111ul << 48) & position;
     }
     else {
-        return pos & 0b11111111ul;
+        return (0b11111111ul << 8) & position;
     }
+}
+
+template <bool amIWhite>
+constexpr bool isValidPawnMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    assert(__builtin_popcountll(from) == 1);
+    obstacles &= ~from;
+    bool result = false;
+    constexpr Direction dir = amIWhite ? N : S;
+    constexpr Direction l = dir + E;
+    constexpr Direction r = dir + W;
+    if (obstacles & to) {
+        obstacles &= ~to;
+        result |= hidden::isInDirection<l, 1>(from, to, obstacles);
+        result |= hidden::isInDirection<r, 1>(from, to, obstacles);
+    }
+    else {
+        if (isInitialPawnPosition<amIWhite>(from)) {
+            result |= hidden::isInDirection<dir, 2>(from, to, obstacles);
+        }
+        else {
+            result |= hidden::isInDirection<dir, 1>(from, to, obstacles);
+        }
+    }
+    return false;
+}
+
+template <bool amIWhite, piece fig>
+constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    if constexpr (isKing(fig)) {
+        return isValidKingMove(from, to);
+    }
+    else if constexpr (isQueen(fig)) {
+        return isValidQueenMove(from, to, obstacles);
+    }
+    else if constexpr (isRook(fig)) {
+        return isValidRookMove(from, to, obstacles);
+    }
+    else if constexpr (isBishop(fig)) {
+        return isValidBishopMove(from, to, obstacles);
+    }
+    else if constexpr (isKnight(fig)) {
+        return isValidKnightMove(from, to, obstacles);
+    }
+    else if constexpr (isPawn(fig)) {
+        if (fig == OwnPawn) {
+            return isValidPawnMove<amIWhite>(from, to, obstacles);
+        }
+        else if (fig == EnemyPawn) {
+            return isValidPawnMove<!amIWhite>(from, to, obstacles);
+        }
+    }
+    assert(false && "Cannot test validity of moves for this type of piece!");
+    return false;
 }
