@@ -264,6 +264,11 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     });
     std::cout << currentSituation;
     std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
+    std::cout << functionCallCounter[0] << " objects, function calls:\n";
+    for (std::size_t i = 1; i < functionCallCounter.size(); ++i) {
+        std::cout << std::setw(12) << static_cast<double>(functionCallCounter[i]) / functionCallCounter[0] << "/"
+                  << std::setw(22) << functionCallCounter[i] << "\n";
+    }
     /*Bot parent;
     std::mt19937 engine;
     Tournament tournament;

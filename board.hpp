@@ -17,11 +17,13 @@ constexpr const static std::uint64_t castling1Fields = 0b01100000ul;
 constexpr const static std::uint64_t castling2Fields = 0b00001110ul;
 constexpr const static std::uint64_t castling3Fields = 0b01100000ul << 56;
 constexpr const static std::uint64_t castling4Fields = 0b00001110ul << 56;
+static std::array<std::uint64_t, 18> functionCallCounter;
 
 template <bool amIWhite>
 struct Board {
     std::array<std::uint64_t, 16> figures;
     std::array<bool, 4> castling{true, true, true, true};
+    mutable decltype(functionCallCounter) functionCalls;
 
     Board();
     template <bool hasBeenWhite>
@@ -31,10 +33,15 @@ struct Board {
     template <bool hasBeenWhite>
     constexpr Board<amIWhite>& operator=(const Board<hasBeenWhite>& previous);
 
+    ~Board();
+
     Board(std::string input);
     void initEmptyField();
 
     piece at(std::uint64_t pos) const;
+
+    void fillCaches();
+    bool isCacheCoherent() const;
 
     bool isValid() const;
     bool isValidMove(Move move) const;
@@ -106,20 +113,17 @@ constexpr Board<amIWhite>& Board<amIWhite>::operator=(const Board<hasBeenWhite>&
         figures[OwnBishop] = previous.figures[EnemyBishop];
         figures[OwnKnight] = previous.figures[EnemyKnight];
         figures[OwnPawn] = previous.figures[EnemyPawn];
-        figures[OwnFigure] = previous.figures[EnemyFigure];
         figures[EnemyKing] = previous.figures[OwnKing];
         figures[EnemyQueen] = previous.figures[OwnQueen];
         figures[EnemyRook] = previous.figures[OwnRook];
         figures[EnemyBishop] = previous.figures[OwnBishop];
         figures[EnemyKnight] = previous.figures[OwnKnight];
         figures[EnemyPawn] = previous.figures[OwnPawn];
-        figures[EnemyFigure] = previous.figures[OwnFigure];
     }
     else {
         figures = previous.figures;
     }
-    figures[AnyFigure] = previous.figures[AnyFigure];
-    figures[None] = previous.figures[None];
+    fillCaches();
     return *this;
 }
 
@@ -193,12 +197,7 @@ Board<amIWhite>::Board(std::string input) {
             castling[2] = false;
         }
     }
-    figures[OwnFigure] = figures[OwnKing] | figures[OwnQueen] | figures[OwnRook] | figures[OwnBishop] |
-        figures[OwnKnight] | figures[OwnPawn];
-    figures[EnemyFigure] = figures[EnemyKing] | figures[EnemyQueen] | figures[EnemyRook] | figures[EnemyBishop] |
-        figures[EnemyKnight] | figures[EnemyPawn];
-    figures[AnyFigure] = figures[OwnFigure] | figures[EnemyFigure];
-    figures[None] = ~figures[AnyFigure];
+    fillCaches();
 }
 
 template <bool amIWhite>
@@ -231,6 +230,26 @@ void Board<amIWhite>::initEmptyField() {
         figures[EnemyKnight] = 0b01000010ul;
         figures[EnemyPawn] = 0b11111111ul << 8;
     }
+    fillCaches();
+}
+
+template <bool amIWhite>
+Board<amIWhite>::~Board() {
+    ++functionCalls[0];
+    for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
+        functionCallCounter[i] += functionCalls[i];
+    }
+}
+
+template <bool amIWhite>
+piece Board<amIWhite>::at(std::uint64_t pos) const {
+    ++functionCalls[1];
+    auto result = std::find_if(figures.begin(), figures.end(), [&](auto fig) { return fig & pos; });
+    return static_cast<piece>(result - figures.begin()); // returns AnyFigure if result == figures.end()
+}
+
+template <bool amIWhite>
+void Board<amIWhite>::fillCaches() {
     figures[OwnFigure] = figures[OwnKing] | figures[OwnQueen] | figures[OwnRook] | figures[OwnBishop] |
         figures[OwnKnight] | figures[OwnPawn];
     figures[EnemyFigure] = figures[EnemyKing] | figures[EnemyQueen] | figures[EnemyRook] | figures[EnemyBishop] |
@@ -240,24 +259,84 @@ void Board<amIWhite>::initEmptyField() {
 }
 
 template <bool amIWhite>
-piece Board<amIWhite>::at(std::uint64_t pos) const {
-    auto result = std::find_if(figures.begin(), figures.end(), [&](auto fig) { return fig & pos; });
-    return static_cast<piece>(result - figures.begin()); // returns AnyFigure if result == figures.end()
+bool Board<amIWhite>::isCacheCoherent() const {
+    return figures[OwnFigure] ==
+        (figures[OwnKing] | figures[OwnQueen] | figures[OwnRook] | figures[OwnBishop] | figures[OwnKnight] |
+         figures[OwnPawn]) &&
+        figures[EnemyFigure] ==
+        (figures[EnemyKing] | figures[EnemyQueen] | figures[EnemyRook] | figures[EnemyBishop] | figures[EnemyKnight] |
+         figures[EnemyPawn]) &&
+        (figures[OwnFigure] & figures[EnemyFigure]) == 0ul &&
+        figures[AnyFigure] == (figures[OwnFigure] | figures[EnemyFigure]) && figures[None] == ~figures[AnyFigure];
 }
 
 template <bool amIWhite>
 bool Board<amIWhite>::isValid() const {
+    ++functionCalls[2];
     return figures[OwnKing] && figures[EnemyKing];
 }
 
 template <bool amIWhite>
 bool Board<amIWhite>::isValidMove(Move move) const {
+    ++functionCalls[3];
     return __builtin_popcountll(move.moveFrom) == 1 && __builtin_popcountll(move.moveTo) == 1 &&
-        (move.moveFrom & figures[OwnFigure]) && (move.moveTo & ~figures[OwnFigure]);
+        (move.moveFrom & figures[OwnFigure]) && (move.moveTo & ~figures[OwnFigure]) && isOwn(move.turnFrom) &&
+        isOwn(move.turnTo);
+}
+
+template <bool amIWhite>
+void extensiveTests(const Board<amIWhite>& result) {
+    if (result.figures[OwnFigure] !=
+        (result.figures[OwnKing] | result.figures[OwnQueen] | result.figures[OwnRook] | result.figures[OwnBishop] |
+         result.figures[OwnKnight] | result.figures[OwnPawn])) {
+        std::cout << "1\n" << result << std::endl;
+    }
+    if (result.figures[EnemyFigure] !=
+        (result.figures[EnemyKing] | result.figures[EnemyQueen] | result.figures[EnemyRook] |
+         result.figures[EnemyBishop] | result.figures[EnemyKnight] | result.figures[EnemyPawn])) {
+        std::cout << "2\n" << result << std::endl;
+    }
+    if ((result.figures[OwnFigure] & result.figures[EnemyFigure]) != 0ul) {
+        std::cout << "3\n" << result << std::endl;
+    }
+    if (result.figures[AnyFigure] != (result.figures[OwnFigure] | result.figures[EnemyFigure])) {
+        std::cout << "4\n" << result << std::endl;
+    }
+    if (result.figures[None] != ~result.figures[AnyFigure]) {
+        std::cout << "5\n" << result << std::endl;
+    }
+    for (auto it : result.figures) {
+        for (std::uint64_t i = 1ul << 63; i != 0; i >>= 1) {
+            std::cout << ((it & i) ? "1" : "0");
+        }
+        std::cout << " " << it << std::endl;
+    }
+    auto it = result.figures[OwnFigure];
+    for (std::uint64_t i = 1ul << 63; i != 0; i >>= 1) {
+        std::cout << ((it & i) ? "1" : "0");
+    }
+    std::cout << " " << it << std::endl;
+    it = result.figures[EnemyFigure];
+    for (std::uint64_t i = 1ul << 63; i != 0; i >>= 1) {
+        std::cout << ((it & i) ? "1" : "0");
+    }
+    std::cout << " " << it << std::endl;
+    it = (result.figures[OwnFigure] & result.figures[EnemyFigure]);
+    for (std::uint64_t i = 1ul << 63; i != 0; i >>= 1) {
+        std::cout << ((it & i) ? "1" : "0");
+    }
+    std::cout << " " << it << std::endl << std::endl;
 }
 
 template <bool amIWhite>
 Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
+    ++functionCalls[4];
+    if (!isCacheCoherent()) {
+        for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
+            std::cout << functionCalls[i] << "\n";
+        }
+    }
+    assert(isCacheCoherent());
     Board<amIWhite> result{*this};
     if (!isValidMove(move)) {
         std::cout << "Trying to apply invalid move:\n" << *this << move << std::endl;
@@ -296,17 +375,17 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
         if (move.moveFrom == blackKingStartPos) {
             if (move.moveTo == (blackKingStartPos << 2)) {
                 assert(castling[0] && (figures[None] & castling3Fields) == castling3Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~0b10000000ul;
-                result.figures[OwnRook] |= 0b00100000ul;
-                result.figures[OwnFigure] &= ~0b10000000ul;
-                result.figures[OwnFigure] |= 0b00100000ul;
+                result.figures[OwnRook] &= ~(0b10000000ul << 56);
+                result.figures[OwnRook] |= 0b00100000ul << 56;
+                result.figures[OwnFigure] &= ~(0b10000000ul << 56);
+                result.figures[OwnFigure] |= 0b00100000ul << 56;
             }
             else if (move.moveTo == blackKingStartPos >> 3) {
                 assert(castling[1] && (figures[None] & castling4Fields) == castling4Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~0b00000001ul;
-                result.figures[OwnRook] |= 0b00000100ul;
-                result.figures[OwnFigure] &= ~0b00000001ul;
-                result.figures[OwnFigure] |= 0b00000100ul;
+                result.figures[OwnRook] &= ~(0b00000001ul << 56);
+                result.figures[OwnRook] |= 0b00000100ul << 56;
+                result.figures[OwnFigure] &= ~(0b00000001ul << 56);
+                result.figures[OwnFigure] |= 0b00000100ul << 56;
             }
         }
         result.castling[2] = false;
@@ -318,13 +397,20 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
     }
     result.castling[0] = castling[2];
     result.castling[1] = castling[3];
+    assert(isCacheCoherent());
     result.figures[AnyFigure] = result.figures[OwnFigure] | result.figures[EnemyFigure];
     result.figures[None] = ~result.figures[AnyFigure];
+    if (!result.isCacheCoherent()) {
+        extensiveTests(*this);
+        extensiveTests(result);
+    }
+    assert(result.isCacheCoherent());
     return result;
 }
 
 template <bool amIWhite>
 piece Board<amIWhite>::figureAt(std::uint64_t pos) const {
+    ++functionCalls[5];
     assert(__builtin_popcountll(pos) == 1);
     for (size_t i = 0; i < figures.size(); ++i) {
         if (figures[i] & pos) {
@@ -337,6 +423,7 @@ piece Board<amIWhite>::figureAt(std::uint64_t pos) const {
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachKingMove(F&& func) const {
+    ++functionCalls[6];
     forEachPos(figures[OwnKing], [&](std::uint64_t currentPos) {
         checkedMove<N, 1>(currentPos, OwnKing, OwnKing, func);
         checkedMove<NE, 1>(currentPos, OwnKing, OwnKing, func);
@@ -381,6 +468,7 @@ constexpr void Board<amIWhite>::forEachKingMove(F&& func) const {
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachQueenMove(F&& func) const {
+    ++functionCalls[7];
     forEachPos(figures[OwnQueen], [&](std::uint64_t currentPos) {
         checkedMoveUntil<N, 8>(currentPos, OwnQueen, OwnQueen, func);
         checkedMoveUntil<E, 8>(currentPos, OwnQueen, OwnQueen, func);
@@ -397,6 +485,7 @@ constexpr void Board<amIWhite>::forEachQueenMove(F&& func) const {
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachRookMove(F&& func) const {
+    ++functionCalls[8];
     forEachPos(figures[OwnRook], [&](std::uint64_t currentPos) {
         checkedMoveUntil<N, 8>(currentPos, OwnRook, OwnRook, func);
         checkedMoveUntil<E, 8>(currentPos, OwnRook, OwnRook, func);
@@ -409,6 +498,7 @@ constexpr void Board<amIWhite>::forEachRookMove(F&& func) const {
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachBishopMove(F&& func) const {
+    ++functionCalls[9];
     forEachPos(figures[OwnBishop], [&](std::uint64_t currentPos) {
         checkedMoveUntil<NE, 8>(currentPos, OwnBishop, OwnBishop, func);
         checkedMoveUntil<SE, 8>(currentPos, OwnBishop, OwnBishop, func);
@@ -421,6 +511,7 @@ constexpr void Board<amIWhite>::forEachBishopMove(F&& func) const {
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachKnightMove(F&& func) const {
+    ++functionCalls[10];
     forEachPos(figures[OwnKnight], [&](std::uint64_t currentPos) {
         checkedMove<NNE, 1>(currentPos, OwnKnight, OwnKnight, func);
         checkedMove<ENE, 1>(currentPos, OwnKnight, OwnKnight, func);
@@ -437,6 +528,7 @@ constexpr void Board<amIWhite>::forEachKnightMove(F&& func) const {
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachPawnMove(F&& func) const {
+    ++functionCalls[11];
     auto moveFunc = [&](auto m) {
         if (figures[None] & m.moveTo) {
             func(m);
@@ -477,6 +569,7 @@ constexpr void Board<amIWhite>::forEachPawnMove(F&& func) const {
 
 template <bool amIWhite>
 std::string Board<amIWhite>::print() const {
+    ++functionCalls[12];
     std::ostringstream tmp;
     tmp << " abcdefgh \n";
     for (auto i = 0; i < 64; ++i) {
@@ -545,6 +638,7 @@ std::ostream& operator<<(std::ostream& stream, const Board<amIWhite>& board) {
 // TODO(mstaff): refactor this function
 template <bool amIWhite>
 Move Board<amIWhite>::getFirstValidMove() const {
+    ++functionCalls[13];
     Move result{};
     bool taken{false};
     auto func = [&](auto m) {
@@ -561,12 +655,16 @@ Move Board<amIWhite>::getFirstValidMove() const {
 template <bool amIWhite>
 template <class F>
 void Board<amIWhite>::forEachValidMove(F&& func) const {
+    ++functionCalls[14];
     auto conditionalFunc = [&](auto m) {
         if (figures[None] & m.moveTo) {
             func(m);
             return true;
         }
         else if (figures[EnemyFigure] & m.moveTo) {
+            if (figures[OwnFigure] & m.moveTo) {
+                assert(false && "Memory error.");
+            }
             func(m);
             return false;
         }
@@ -586,6 +684,9 @@ void Board<amIWhite>::forEachValidMove(F&& func) const {
             return true;
         }
         else if (figures[EnemyFigure] & m.moveTo) {
+            if (figures[OwnFigure] & m.moveTo) {
+                assert(false && "Memory error.");
+            }
             if (!isThreatened(m.moveTo)) {
                 func(m);
             }
@@ -610,6 +711,7 @@ void Board<amIWhite>::forEachValidMove(F&& func) const {
 template <bool amIWhite>
 template <piece fig, class F>
 constexpr bool Board<amIWhite>::forEachThreatByFigure(F&& func, std::uint64_t positions) const {
+    ++functionCalls[15];
     return forEachPos(figures[fig], [&](std::uint64_t from) {
         return forEachPos(positions, [&](std::uint64_t to) {
             // TODO(mstaff): function naming
@@ -626,6 +728,7 @@ constexpr bool Board<amIWhite>::forEachThreatByFigure(F&& func, std::uint64_t po
 template <bool amIWhite>
 template <class F>
 constexpr void Board<amIWhite>::forEachThreat(std::uint64_t positions, F&& func) const {
+    ++functionCalls[16];
     forEachThreatByFigure<EnemyKing>(std::forward<F>(func), positions) &&
         forEachThreatByFigure<EnemyQueen>(std::forward<F>(func), positions) &&
         forEachThreatByFigure<EnemyRook>(std::forward<F>(func), positions) &&
@@ -636,6 +739,7 @@ constexpr void Board<amIWhite>::forEachThreat(std::uint64_t positions, F&& func)
 
 template <bool amIWhite>
 constexpr bool Board<amIWhite>::isThreatened(std::uint64_t positions) const {
+    ++functionCalls[17];
     bool result = false;
     forEachThreat(positions, [&](auto) {
         result = true;

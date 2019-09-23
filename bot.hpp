@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iomanip>
 #include <limits>
+#include <list>
 #include <numeric>
 #include <random>
 
@@ -111,10 +112,6 @@ int Bot::getScore(
         // this number needs to be within the range set by getMove for bestScore.
         int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()) + 1};
         int shallowScore = getScore<0>(board, bestPreviousScore, worstPreviousScore);
-        std::int64_t totalCounter = 1;
-        std::int64_t pruneCounter = 1;
-        std::int64_t totalScore = 0;
-        std::int64_t pruneScore = 0;
         board.forEachValidMove([&](const Move& move) {
             // alpha-beta-pruning
             if (bestScore >= bestPreviousScore) {
@@ -128,11 +125,7 @@ int Bot::getScore(
                 }
                 int doubleMovePruningScore =
                     getScore<depth % 2 + 2>(doubleMovePruningBoard, bestPreviousScore, worstPreviousScore);
-                ++totalCounter;
-                totalScore += doubleMovePruningScore;
                 if (doubleMovePruningScore < shallowScore * 2 + 100) {
-                    ++pruneCounter;
-                    pruneScore += doubleMovePruningScore;
                     return;
                 }
             }
@@ -142,12 +135,6 @@ int Bot::getScore(
                 bestScore = currentScore;
             }
         });
-        if constexpr (depth > 3) {
-            std::cout << std::setw(22 - depth) << depth << ": " << std::setw(depth) << totalCounter - pruneCounter
-                      << "/" << std::setw(4) << totalCounter << ": " << std::setw(12) << shallowScore << "/"
-                      << std::setw(12) << (totalScore - pruneScore) / (totalCounter - pruneCounter + 1) << "/"
-                      << std::setw(12) << totalScore / totalCounter << "\n";
-        }
         return bestScore;
     }
 }
