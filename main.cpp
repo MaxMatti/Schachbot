@@ -8,9 +8,12 @@
 #include <iostream>
 #include <random>
 #include <set>
+#include <string>
 
 static std::chrono::steady_clock::time_point totalStart;
 static std::int64_t totalMoves;
+
+[[noreturn]] void signal_handler(int signal[[maybe_unused]]);
 
 std::string read_board() {
     std::string result;
@@ -34,21 +37,27 @@ std::string read_move() {
     return result;
 }
 
-[[noreturn]] void signal_handler(int signal [[maybe_unused]]) {
-    std::cout << "Evaluated " << totalMoves << " Moves (" << (totalMoves / getMsSince(totalStart)) << "/ms).\n";
-    exit(0);
+template <bool amIWhite>
+Move createMove(const Board<amIWhite>& currentSituation, std::string input) {
+    std::uint64_t from = 1ul << (63 - (7 - (input[0] - (input[0] < 'I' ? 'A' : 'a')) + (input[1] - '1') * 8));
+    std::uint64_t to = 1ul << (63 - (7 - (input[2] - (input[2] < 'I' ? 'A' : 'a')) + (input[3] - '1') * 8));
+    piece turnTo = input.length() > 4 ? getPiece(input[4]) : None;
+    return Move{from, to, currentSituation.at(from), turnTo};
 }
 
 template <bool amIWhite>
-Move getInputMove(Board<amIWhite> currentSituation) {
+Move getInputMove(const Board<amIWhite>& currentSituation) {
     std::string tmp;
-    while (tmp.length() != 4 && tmp.length() != 5) {
+    Move result;
+    while (true) {
         std::cin >> tmp;
+        if (tmp.length() == 4 || tmp.length() == 5) {
+            result = createMove(currentSituation, tmp);
+            if (currentSituation.isValidMove(result)) {
+                return result;
+            }
+        }
     }
-    std::uint64_t from = 1ul << (63 - (7 - (tmp[0] - (tmp[0] < 'I' ? 'A' : 'a')) + (tmp[1] - '1') * 8));
-    std::uint64_t to = 1ul << (63 - (7 - (tmp[2] - (tmp[2] < 'I' ? 'A' : 'a')) + (tmp[3] - '1') * 8));
-    piece turnTo = tmp.length() > 4 ? getPiece(tmp[4]) : None;
-    return Move{from, to, currentSituation.at(from), turnTo};
 }
 
 namespace std {
@@ -132,7 +141,7 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
     return chosenMove;
 }
 
-int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
+int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
     std::signal(SIGINT, signal_handler);
     std::signal(SIGABRT, signal_handler);
     std::string initBoard =
@@ -159,6 +168,15 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     totalStart = std::chrono::steady_clock::now();
     totalMoves = 0;
     int sameCounter = 0;
+    std::vector<std::string> startMoves;
+    std::size_t startMovesPos = 0;
+    startMoves.push_back("e2e4");
+    startMoves.push_back("b1c3");
+    startMoves.push_back("d2d4");
+    startMoves.push_back("g1f3");
+    startMoves.push_back("c1d2");
+    startMoves.push_back("f1c4");
+    startMoves.push_back("e1g1");
     while (currentSituation.isValid() && sameCounter < 10) {
         std::cout << currentSituation;
         using namespace std::chrono_literals;
@@ -166,7 +184,15 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         totalMoves += currentBot.counter;
         currentBot.counter = 0;
         auto timeThreshold = 0.2s;
-        auto chosenMove = getMove<4, false>(currentBot, currentSituation);
+        Move chosenMove;
+        if (startMovesPos < startMoves.size()) {
+            chosenMove = createMove(currentSituation, startMoves[startMovesPos]);
+            ++startMovesPos;
+        }
+        else {
+            chosenMove = getInputMove(currentSituation);
+        }
+        /*auto chosenMove = getMove<4, false>(currentBot, currentSituation);
         if (std::chrono::steady_clock::now() - start < timeThreshold) {
             std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<6, false>(currentBot, currentSituation);
@@ -198,7 +224,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         if (std::chrono::steady_clock::now() - start < timeThreshold) {
             std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<20, false>(currentBot, currentSituation);
-        }
+        }*/
         std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms.\n";
         std::cout << "Evaluated " << currentBot.counter << " Moves (" << currentBot.counter / (getMsSince(start) + 1)
                   << "/ms).\n";
@@ -263,12 +289,6 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         std::cout << i << (tmp.isValid() ? "   (valid)\n" : " (invalid)\n");
     });
     std::cout << currentSituation;
-    std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
-    std::cout << functionCallCounter[0] << " objects, function calls:\n";
-    for (std::size_t i = 1; i < functionCallCounter.size(); ++i) {
-        std::cout << std::setw(12) << static_cast<double>(functionCallCounter[i]) / functionCallCounter[0] << "/"
-                  << std::setw(22) << functionCallCounter[i] << "\n";
-    }
     /*Bot parent;
     std::mt19937 engine;
     Tournament tournament;
@@ -278,4 +298,48 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     tournament.evaluate(true);*/
     signal_handler(0);
     return 0;
+}
+
+#define PRINT(x) std::cout << std::setw(20) << #x << ": " << x << "\n"
+
+template <class T>
+void printHistogram(T&& t) {
+    size_t termSize = 155;
+    auto totalCallCounter = std::accumulate(t.begin(), t.end(), 0ul);
+    auto maxCallCounter = std::max_element(t.begin(), t.end());
+    for (std::size_t j = 0; j < t.size(); ++j) {
+        if (t[j] == 0ul) {
+            auto k = j;
+            for (; k < t.size(); ++k) {
+                if (t[k] != 0ul) {
+                    break;
+                }
+            }
+            if (k == t.size()) {
+                break;
+            }
+        }
+        std::ostringstream tmp;
+        tmp << "(" << t[j] << ")";
+        std::cout << std::setw(2) << j << ": " << std::setw(3) << static_cast<size_t>(t[j] * 100.0 / totalCallCounter)
+                  << "% " << std::setw(std::to_string(*maxCallCounter).size() + 2) << tmp.str() << " ";
+        for (std::size_t k = 0; k <
+             static_cast<size_t>(1.0 * t[j] * (termSize - std::to_string(*maxCallCounter).size()) / totalCallCounter);
+             ++k) {
+            std::cout << "=";
+        }
+        std::cout << "\n";
+    }
+}
+
+[[noreturn]] void signal_handler(int signal[[maybe_unused]]) {
+    std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
+    std::cout << functionCallCounter[0][1] << " objects, function calls:\n";
+    /*for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
+        printHistogram(functionCallCounter[i]);
+        std::cout << "\n";
+    }
+    printHistogram(moveCounter1);
+    printHistogram(moveCounter2);*/
+    exit(0);
 }

@@ -151,6 +151,8 @@ struct hash<std::array<piece, size>>;
 
 std::ostream& operator<<(std::ostream& stream, const piece& obj);
 
+std::string printPos(std::uint64_t pos);
+
 namespace std {
 template <std::size_t size>
 struct hash<std::array<piece, size>> {

@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -11,19 +12,15 @@
 #include <string>
 #include <vector>
 
-constexpr const static std::uint64_t whiteKingStartPos = 0b00010000ul;
-constexpr const static std::uint64_t blackKingStartPos = 0b00010000ul << 56;
-constexpr const static std::uint64_t castling1Fields = 0b01100000ul;
-constexpr const static std::uint64_t castling2Fields = 0b00001110ul;
-constexpr const static std::uint64_t castling3Fields = 0b01100000ul << 56;
-constexpr const static std::uint64_t castling4Fields = 0b00001110ul << 56;
-static std::array<std::uint64_t, 18> functionCallCounter;
+constexpr const static std::size_t functionCallCounterSize = 18;
+static std::array<std::array<std::uint64_t, 64>, functionCallCounterSize> functionCallCounter;
 
 template <bool amIWhite>
 struct Board {
     std::array<std::uint64_t, 16> figures;
     std::array<bool, 4> castling{true, true, true, true};
-    mutable decltype(functionCallCounter) functionCalls;
+    mutable std::array<std::uint64_t, functionCallCounterSize> functionCalls{
+        0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul};
 
     Board();
     template <bool hasBeenWhite>
@@ -153,47 +150,51 @@ Board<amIWhite>::Board(std::string input) {
         default: break; // TODO(mstaff): handle this error.
         }
     }
+    castling[0] = true;
+    castling[1] = true;
+    castling[2] = true;
+    castling[3] = true;
     if constexpr (amIWhite) {
-        if (figures[OwnKing] != 0b00010000ul) {
-            castling[0] = false;
-            castling[1] = false;
-        }
-        if (!(figures[OwnRook] & 0b00000001ul)) {
-            castling[0] = false;
-        }
-        if (!(figures[OwnRook] & 0b10000000ul)) {
-            castling[1] = false;
-        }
-        if (figures[EnemyKing] != 0b00010000ul << 56) {
-            castling[2] = false;
-            castling[3] = false;
-        }
-        if (!(figures[EnemyRook] & 0b00000001ul << 56)) {
-            castling[2] = false;
-        }
-        if (!(figures[EnemyRook] & 0b10000000ul << 56)) {
-            castling[3] = false;
-        }
-    }
-    else {
-        if (figures[OwnKing] != 0b00001000ul << 56) {
+        if (figures[OwnKing] != whiteKingStartPos) {
             castling[0] = false;
             castling[1] = false;
         }
         if (!(figures[OwnRook] & 0b00000001ul << 56)) {
-            castling[1] = false;
-        }
-        if (!(figures[OwnRook] & 0b10000000ul << 56)) {
             castling[0] = false;
         }
-        if (figures[EnemyKing] != 0b00001000ul) {
+        if (!(figures[OwnRook] & 0b10000000ul << 56)) {
+            castling[1] = false;
+        }
+        if (figures[EnemyKing] != blackKingStartPos) {
             castling[2] = false;
             castling[3] = false;
         }
         if (!(figures[EnemyRook] & 0b00000001ul)) {
-            castling[3] = false;
+            castling[2] = false;
         }
         if (!(figures[EnemyRook] & 0b10000000ul)) {
+            castling[3] = false;
+        }
+    }
+    else {
+        if (figures[OwnKing] != 0b00001000ul) {
+            castling[0] = false;
+            castling[1] = false;
+        }
+        if (!(figures[OwnRook] & 0b00000001ul)) {
+            castling[1] = false;
+        }
+        if (!(figures[OwnRook] & 0b10000000ul)) {
+            castling[0] = false;
+        }
+        if (figures[EnemyKing] != 0b00001000ul << 56) {
+            castling[2] = false;
+            castling[3] = false;
+        }
+        if (!(figures[EnemyRook] & 0b00000001ul << 56)) {
+            castling[3] = false;
+        }
+        if (!(figures[EnemyRook] & 0b10000000ul << 56)) {
             castling[2] = false;
         }
     }
@@ -203,13 +204,13 @@ Board<amIWhite>::Board(std::string input) {
 template <bool amIWhite>
 void Board<amIWhite>::initEmptyField() {
     if constexpr (amIWhite) {
-        figures[OwnKing] = 0b00010000ul;
+        figures[OwnKing] = whiteKingStartPos;
         figures[OwnQueen] = 0b00001000ul;
         figures[OwnRook] = 0b10000001ul;
         figures[OwnBishop] = 0b00100100ul;
         figures[OwnKnight] = 0b01000010ul;
         figures[OwnPawn] = 0b11111111ul << 8;
-        figures[EnemyKing] = 0b00010000ul << 56;
+        figures[EnemyKing] = blackKingStartPos;
         figures[EnemyQueen] = 0b00001000ul << 56;
         figures[EnemyRook] = 0b10000001ul << 56;
         figures[EnemyBishop] = 0b00100100ul << 56;
@@ -237,7 +238,7 @@ template <bool amIWhite>
 Board<amIWhite>::~Board() {
     ++functionCalls[0];
     for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
-        functionCallCounter[i] += functionCalls[i];
+        ++functionCallCounter[i][std::min(functionCalls[i], 64ul)];
     }
 }
 
@@ -332,16 +333,17 @@ template <bool amIWhite>
 Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
     ++functionCalls[4];
     if (!isCacheCoherent()) {
-        for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
+        for (std::size_t i = 0; i < functionCalls.size(); ++i) {
             std::cout << functionCalls[i] << "\n";
         }
     }
     assert(isCacheCoherent());
     Board<amIWhite> result{*this};
-    if (!isValidMove(move)) {
+    auto tmp = isValidMove(move) && ::isValidMove<amIWhite>(move, figures[AnyFigure]);
+    if (!tmp) {
         std::cout << "Trying to apply invalid move:\n" << *this << move << std::endl;
     }
-    assert(isValidMove(move) && "Cannot apply invalid move!");
+    assert(tmp && "Cannot apply invalid move!");
     result.figures[move.turnFrom] &= ~move.moveFrom;
     result.figures[move.turnTo] |= move.moveTo;
     result.figures[OwnFigure] &= ~move.moveFrom;
@@ -359,33 +361,33 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
         if (move.moveFrom == whiteKingStartPos) {
             if (move.moveTo == (whiteKingStartPos << 2)) {
                 assert(castling[0] && (figures[None] & castling1Fields) == castling1Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~0b10000000ul;
-                result.figures[OwnRook] |= 0b00100000ul;
-                result.figures[OwnFigure] &= ~0b10000000ul;
-                result.figures[OwnFigure] |= 0b00100000ul;
-            }
-            else if (move.moveTo == whiteKingStartPos >> 3) {
-                assert(castling[1] && (figures[None] & castling2Fields) == castling2Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~0b00000001ul;
-                result.figures[OwnRook] |= 0b00000100ul;
-                result.figures[OwnFigure] &= ~0b00000001ul;
-                result.figures[OwnFigure] |= 0b00000100ul;
-            }
-        }
-        if (move.moveFrom == blackKingStartPos) {
-            if (move.moveTo == (blackKingStartPos << 2)) {
-                assert(castling[0] && (figures[None] & castling3Fields) == castling3Fields && "Castling is blocked!");
                 result.figures[OwnRook] &= ~(0b10000000ul << 56);
                 result.figures[OwnRook] |= 0b00100000ul << 56;
                 result.figures[OwnFigure] &= ~(0b10000000ul << 56);
                 result.figures[OwnFigure] |= 0b00100000ul << 56;
             }
-            else if (move.moveTo == blackKingStartPos >> 3) {
-                assert(castling[1] && (figures[None] & castling4Fields) == castling4Fields && "Castling is blocked!");
+            else if (move.moveTo == whiteKingStartPos >> 3) {
+                assert(castling[1] && (figures[None] & castling2Fields) == castling2Fields && "Castling is blocked!");
                 result.figures[OwnRook] &= ~(0b00000001ul << 56);
                 result.figures[OwnRook] |= 0b00000100ul << 56;
                 result.figures[OwnFigure] &= ~(0b00000001ul << 56);
                 result.figures[OwnFigure] |= 0b00000100ul << 56;
+            }
+        }
+        else if (move.moveFrom == blackKingStartPos) {
+            if (move.moveTo == (blackKingStartPos << 2)) {
+                assert(castling[0] && (figures[None] & castling3Fields) == castling3Fields && "Castling is blocked!");
+                result.figures[OwnRook] &= ~0b10000000ul;
+                result.figures[OwnRook] |= 0b00100000ul;
+                result.figures[OwnFigure] &= ~0b10000000ul;
+                result.figures[OwnFigure] |= 0b00100000ul;
+            }
+            else if (move.moveTo == blackKingStartPos >> 3) {
+                assert(castling[1] && (figures[None] & castling4Fields) == castling4Fields && "Castling is blocked!");
+                result.figures[OwnRook] &= ~0b00000001ul;
+                result.figures[OwnRook] |= 0b00000100ul;
+                result.figures[OwnFigure] &= ~0b00000001ul;
+                result.figures[OwnFigure] |= 0b00000100ul;
             }
         }
         result.castling[2] = false;
