@@ -408,14 +408,14 @@ constexpr bool isInitialPawnPosition(std::uint64_t position) {
 }
 
 template <bool amIWhite>
-constexpr bool isValidPawnMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+constexpr bool isValidPawnMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles, std::uint64_t enPassent) {
     assert(__builtin_popcountll(from) == 1);
     obstacles &= ~from;
     bool result = false;
     constexpr Direction dir = amIWhite ? S : N;
     constexpr Direction l = dir + E;
     constexpr Direction r = dir + W;
-    if (obstacles & to) {
+    if (obstacles & to || enPassent & to) {
         obstacles &= ~to;
         result |= hidden::isInDirection<l, 1>(from, to, obstacles);
         result |= hidden::isInDirection<r, 1>(from, to, obstacles);
@@ -430,7 +430,7 @@ constexpr bool isValidPawnMove(std::uint64_t from, std::uint64_t to, std::uint64
 }
 
 template <piece fig>
-constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles, std::uint64_t enPassent) {
     if constexpr (isKing(fig)) {
         return isValidKingMove(from, to);
     }
@@ -448,14 +448,14 @@ constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t o
     }
     else if constexpr (isPawn(fig)) {
         if constexpr (fig == WhitePawn) {
-            return isValidPawnMove<true>(from, to, obstacles);
+            return isValidPawnMove<true>(from, to, obstacles, enPassent);
         }
         else if constexpr (fig == BlackPawn) {
-            return isValidPawnMove<false>(from, to, obstacles);
+            return isValidPawnMove<false>(from, to, obstacles, enPassent);
         }
     }
     assert(false && "Cannot test validity of moves for this type of piece!");
     return false;
 }
 
-bool isValidMove(Move move, std::uint64_t obstacles);
+bool isValidMove(Move move, std::uint64_t obstacles, std::uint64_t enPassent);

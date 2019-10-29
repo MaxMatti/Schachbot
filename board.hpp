@@ -315,7 +315,7 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
     assert(isCacheCoherent());
     Board<amIWhite> result{*this};
     result.enPassent = 0ul;
-    auto tmp = isValidMove(move) && ::isValidMove(move, figures[AnyFigure]);
+    auto tmp = isValidMove(move) && ::isValidMove(move, figures[AnyFigure], enPassent);
     if (!tmp) {
         std::cout << "Trying to apply invalid move:\n" << *this << move << std::endl;
     }
@@ -713,7 +713,7 @@ constexpr bool Board<amIWhite>::forEachThreatByFigure(F&& func, std::uint64_t po
     return forEachPos(figures[fig], [&](std::uint64_t from) {
         return forEachPos(positions, [&](std::uint64_t to) {
             // TODO(mstaff): function naming
-            if (::isValidMove<fig>(from, to, figures[AnyFigure])) {
+            if (::isValidMove<fig>(from, to, figures[AnyFigure], enPassent)) {
                 return func(from);
             }
             else {

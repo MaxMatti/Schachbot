@@ -20,7 +20,7 @@ std::ostream& operator<<(std::ostream& stream, const Move& move) {
 }
 */
 
-bool isValidMove(Move move, std::uint64_t obstacles) {
+bool isValidMove(Move move, std::uint64_t obstacles, std::uint64_t enPassent) {
     if (isKing(move.turnFrom)) {
         return isValidKingMove(move.moveFrom, move.moveTo);
     }
@@ -38,10 +38,10 @@ bool isValidMove(Move move, std::uint64_t obstacles) {
     }
     else if (isPawn(move.turnFrom)) {
         if (move.turnFrom == WhitePawn) {
-            return isValidPawnMove<true>(move.moveFrom, move.moveTo, obstacles);
+            return isValidPawnMove<true>(move.moveFrom, move.moveTo, obstacles, enPassent);
         }
         else if (move.turnFrom == BlackPawn) {
-            return isValidPawnMove<false>(move.moveFrom, move.moveTo, obstacles);
+            return isValidPawnMove<false>(move.moveFrom, move.moveTo, obstacles, enPassent);
         }
     }
     assert(false && "Cannot test validity of moves for this type of piece!");
