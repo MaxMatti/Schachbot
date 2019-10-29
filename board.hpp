@@ -16,6 +16,7 @@ template <bool amIWhite>
 struct Board {
     std::array<std::uint64_t, 16> figures;
     std::array<bool, 4> castling{true, true, true, true};
+    std::uint64_t enPassent = 0ul;
 
     constexpr const static piece OwnKing = amIWhite ? WhiteKing : BlackKing;
     constexpr const static piece OwnQueen = amIWhite ? WhiteQueen : BlackQueen;
@@ -121,19 +122,22 @@ template <bool amIWhite>
 template <bool hasBeenWhite>
 Board<amIWhite>::Board(Board<hasBeenWhite>&& previous)
     : figures(previous.figures)
-    , castling(previous.castling) {}
+    , castling(previous.castling)
+    , enPassent(previous.enPassent) {}
 
 template <bool amIWhite>
 template <bool hasBeenWhite>
 Board<amIWhite>::Board(const Board<hasBeenWhite>& previous)
     : figures(previous.figures)
-    , castling(previous.castling) {}
+    , castling(previous.castling)
+    , enPassent(previous.enPassent) {}
 
 template <bool amIWhite>
 template <bool hasBeenWhite>
 constexpr Board<amIWhite>& Board<amIWhite>::operator=(Board<hasBeenWhite>&& previous) {
     figures = previous.figures;
     castling = previous.castling;
+    enPassent = previous.enPassent;
     return *this;
 }
 
@@ -142,6 +146,7 @@ template <bool hasBeenWhite>
 constexpr Board<amIWhite>& Board<amIWhite>::operator=(const Board<hasBeenWhite>& previous) {
     figures = previous.figures;
     castling = previous.castling;
+    enPassent = previous.enPassent;
     return *this;
 }
 
@@ -184,29 +189,22 @@ Board<amIWhite>::Board(std::string input) {
     if (figures[WhiteKing] != whiteKingStartPos) {
         castling[0] = false;
         castling[1] = false;
-        std::cout << printPos(figures[WhiteKing]) << "\n" << printPos(whiteKingStartPos);
-        std::cout << "====1\n";
     }
     if (!(figures[WhiteRook] & 0b00000001ul << 56)) {
         castling[0] = false;
-        std::cout << "====2\n";
     }
     if (!(figures[WhiteRook] & 0b10000000ul << 56)) {
         castling[1] = false;
-        std::cout << "====3\n";
     }
     if (figures[BlackKing] != blackKingStartPos) {
         castling[2] = false;
         castling[3] = false;
-        std::cout << "====4\n";
     }
     if (!(figures[BlackRook] & 0b00000001ul)) {
         castling[2] = false;
-        std::cout << "====5\n";
     }
     if (!(figures[BlackRook] & 0b10000000ul)) {
         castling[3] = false;
-        std::cout << "====6\n";
     }
     fillCaches();
 }
@@ -316,6 +314,7 @@ template <bool amIWhite>
 Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
     assert(isCacheCoherent());
     Board<amIWhite> result{*this};
+    result.enPassent = 0ul;
     auto tmp = isValidMove(move) && ::isValidMove(move, figures[AnyFigure]);
     if (!tmp) {
         std::cout << "Trying to apply invalid move:\n" << *this << move << std::endl;
@@ -347,6 +346,14 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
         }
         else if (move.moveFrom == castling4RookStart) {
             result.castling[3] = false;
+        }
+    }
+    else if (isPawn(move.turnFrom)) {
+        if (move.moveFrom & whitePawnStartPos && move.moveTo & whitePawnJumpPos) {
+            result.enPassent = move.moveTo << 8;
+        }
+        else if (move.moveFrom & blackPawnStartPos && move.moveTo & blackPawnJumpPos) {
+            result.enPassent = move.moveFrom << 8;
         }
     }
     else if (isKing(move.turnFrom)) {
@@ -532,7 +539,7 @@ constexpr void Board<amIWhite>::forEachPawnMove(F&& func) const {
         return false;
     };
     auto takeFunc = [&](auto m) {
-        if (figures[EnemyFigure] & m.moveTo) {
+        if (figures[EnemyFigure] & m.moveTo || enPassent & m.moveTo) {
             func(m);
             return true;
         }

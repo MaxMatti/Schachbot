@@ -184,14 +184,14 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         totalMoves += currentBot.counter;
         currentBot.counter = 0;
         auto timeThreshold = 0.2s;
-        Move chosenMove; /*
-         if (startMovesPos < startMoves.size()) {
-             chosenMove = createMove(currentSituation, startMoves[startMovesPos]);
-             ++startMovesPos;
-         }
-         else {
-             chosenMove = getInputMove(currentSituation);
-         }*/
+        Move chosenMove;
+        /*if (startMovesPos < startMoves.size()) {
+            chosenMove = createMove(currentSituation, startMoves[startMovesPos]);
+            ++startMovesPos;
+        }
+        else {
+            chosenMove = getInputMove(currentSituation);
+        }*/
         chosenMove = getMove<4, false>(currentBot, currentSituation);
         /*if (std::chrono::steady_clock::now() - start < timeThreshold) {
             std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;

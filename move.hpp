@@ -13,24 +13,31 @@ constexpr const static std::uint64_t whiteRookStartPos = 0b10000001ul << 56;
 constexpr const static std::uint64_t whiteBishopStartPos = 0b00100100ul << 56;
 constexpr const static std::uint64_t whiteKnightStartPos = 0b01000010ul << 56;
 constexpr const static std::uint64_t whitePawnStartPos = 0b11111111ul << 48;
+constexpr const static std::uint64_t whitePawnJumpPos = 0b11111111ul << 32;
+
 constexpr const static std::uint64_t blackKingStartPos = 0b00010000ul;
 constexpr const static std::uint64_t blackQueenStartPos = 0b00001000ul;
 constexpr const static std::uint64_t blackRookStartPos = 0b10000001ul;
 constexpr const static std::uint64_t blackBishopStartPos = 0b00100100ul;
 constexpr const static std::uint64_t blackKnightStartPos = 0b01000010ul;
 constexpr const static std::uint64_t blackPawnStartPos = 0b11111111ul << 8;
+constexpr const static std::uint64_t blackPawnJumpPos = 0b11111111ul << 24;
+
 constexpr const static std::uint64_t castling1RookStart = 0b10000000ul << 56;
 constexpr const static std::uint64_t castling1RookTarget = 0b00100000ul << 56;
 constexpr const static std::uint64_t castling1Target = 0b01000000ul << 56;
 constexpr const static std::uint64_t castling1Fields = 0b01100000ul << 56;
+
 constexpr const static std::uint64_t castling2RookStart = 0b00000001ul << 56;
 constexpr const static std::uint64_t castling2RookTarget = 0b00000100ul << 56;
 constexpr const static std::uint64_t castling2Target = 0b00000010ul << 56;
 constexpr const static std::uint64_t castling2Fields = 0b00001110ul << 56;
+
 constexpr const static std::uint64_t castling3RookStart = 0b10000000ul;
 constexpr const static std::uint64_t castling3RookTarget = 0b00100000ul;
 constexpr const static std::uint64_t castling3Target = 0b01000000ul;
 constexpr const static std::uint64_t castling3Fields = 0b01100000ul;
+
 constexpr const static std::uint64_t castling4RookStart = 0b00000001ul;
 constexpr const static std::uint64_t castling4RookTarget = 0b00000100ul;
 constexpr const static std::uint64_t castling4Target = 0b00000010ul;
