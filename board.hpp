@@ -162,18 +162,18 @@ Board<amIWhite>::Board(std::string input) {
     }
     for (uint i = 0; i < 64; ++i) {
         switch (getPiece(input[i])) {
-        case OwnKing: figures[OwnKing] = 1ul << i; break;
-        case OwnQueen: figures[OwnQueen] |= 1ul << i; break;
-        case OwnRook: figures[OwnRook] |= 1ul << i; break;
-        case OwnBishop: figures[OwnBishop] |= 1ul << i; break;
-        case OwnKnight: figures[OwnKnight] |= 1ul << i; break;
-        case OwnPawn: figures[OwnPawn] |= 1ul << i; break;
-        case EnemyKing: figures[EnemyKing] = 1ul << i; break;
-        case EnemyQueen: figures[EnemyQueen] |= 1ul << i; break;
-        case EnemyRook: figures[EnemyRook] |= 1ul << i; break;
-        case EnemyBishop: figures[EnemyBishop] |= 1ul << i; break;
-        case EnemyKnight: figures[EnemyKnight] |= 1ul << i; break;
-        case EnemyPawn: figures[EnemyPawn] |= 1ul << i; break;
+        case WhiteKing: figures[WhiteKing] = 1ul << i; break;
+        case WhiteQueen: figures[WhiteQueen] |= 1ul << i; break;
+        case WhiteRook: figures[WhiteRook] |= 1ul << i; break;
+        case WhiteBishop: figures[WhiteBishop] |= 1ul << i; break;
+        case WhiteKnight: figures[WhiteKnight] |= 1ul << i; break;
+        case WhitePawn: figures[WhitePawn] |= 1ul << i; break;
+        case BlackKing: figures[BlackKing] = 1ul << i; break;
+        case BlackQueen: figures[BlackQueen] |= 1ul << i; break;
+        case BlackRook: figures[BlackRook] |= 1ul << i; break;
+        case BlackBishop: figures[BlackBishop] |= 1ul << i; break;
+        case BlackKnight: figures[BlackKnight] |= 1ul << i; break;
+        case BlackPawn: figures[BlackPawn] |= 1ul << i; break;
         default: break; // TODO(mstaff): handle this error.
         }
     }
@@ -181,83 +181,50 @@ Board<amIWhite>::Board(std::string input) {
     castling[1] = true;
     castling[2] = true;
     castling[3] = true;
-    if constexpr (amIWhite) {
-        if (figures[OwnKing] != whiteKingStartPos) {
-            castling[0] = false;
-            castling[1] = false;
-        }
-        if (!(figures[OwnRook] & 0b00000001ul << 56)) {
-            castling[0] = false;
-        }
-        if (!(figures[OwnRook] & 0b10000000ul << 56)) {
-            castling[1] = false;
-        }
-        if (figures[EnemyKing] != blackKingStartPos) {
-            castling[2] = false;
-            castling[3] = false;
-        }
-        if (!(figures[EnemyRook] & 0b00000001ul)) {
-            castling[2] = false;
-        }
-        if (!(figures[EnemyRook] & 0b10000000ul)) {
-            castling[3] = false;
-        }
+    if (figures[WhiteKing] != whiteKingStartPos) {
+        castling[0] = false;
+        castling[1] = false;
+        std::cout << printPos(figures[WhiteKing]) << "\n" << printPos(whiteKingStartPos);
+        std::cout << "====1\n";
     }
-    else {
-        if (figures[OwnKing] != 0b00001000ul) {
-            castling[0] = false;
-            castling[1] = false;
-        }
-        if (!(figures[OwnRook] & 0b00000001ul)) {
-            castling[1] = false;
-        }
-        if (!(figures[OwnRook] & 0b10000000ul)) {
-            castling[0] = false;
-        }
-        if (figures[EnemyKing] != 0b00001000ul << 56) {
-            castling[2] = false;
-            castling[3] = false;
-        }
-        if (!(figures[EnemyRook] & 0b00000001ul << 56)) {
-            castling[3] = false;
-        }
-        if (!(figures[EnemyRook] & 0b10000000ul << 56)) {
-            castling[2] = false;
-        }
+    if (!(figures[WhiteRook] & 0b00000001ul << 56)) {
+        castling[0] = false;
+        std::cout << "====2\n";
+    }
+    if (!(figures[WhiteRook] & 0b10000000ul << 56)) {
+        castling[1] = false;
+        std::cout << "====3\n";
+    }
+    if (figures[BlackKing] != blackKingStartPos) {
+        castling[2] = false;
+        castling[3] = false;
+        std::cout << "====4\n";
+    }
+    if (!(figures[BlackRook] & 0b00000001ul)) {
+        castling[2] = false;
+        std::cout << "====5\n";
+    }
+    if (!(figures[BlackRook] & 0b10000000ul)) {
+        castling[3] = false;
+        std::cout << "====6\n";
     }
     fillCaches();
 }
 
 template <bool amIWhite>
 void Board<amIWhite>::initEmptyField() {
-    if constexpr (amIWhite) {
-        figures[OwnKing] = whiteKingStartPos;
-        figures[OwnQueen] = 0b00001000ul;
-        figures[OwnRook] = 0b10000001ul;
-        figures[OwnBishop] = 0b00100100ul;
-        figures[OwnKnight] = 0b01000010ul;
-        figures[OwnPawn] = 0b11111111ul << 8;
-        figures[EnemyKing] = blackKingStartPos;
-        figures[EnemyQueen] = 0b00001000ul << 56;
-        figures[EnemyRook] = 0b10000001ul << 56;
-        figures[EnemyBishop] = 0b00100100ul << 56;
-        figures[EnemyKnight] = 0b01000010ul << 56;
-        figures[EnemyPawn] = 0b11111111ul << 48;
-    }
-    else {
-        figures[OwnKing] = 0b00010000ul << 56;
-        figures[OwnQueen] = 0b00001000ul << 56;
-        figures[OwnRook] = 0b10000001ul << 56;
-        figures[OwnBishop] = 0b00100100ul << 56;
-        figures[OwnKnight] = 0b01000010ul << 56;
-        figures[OwnPawn] = 0b11111111ul << 48;
-        figures[EnemyKing] = 0b00010000ul;
-        figures[EnemyQueen] = 0b00001000ul;
-        figures[EnemyRook] = 0b10000001ul;
-        figures[EnemyBishop] = 0b00100100ul;
-        figures[EnemyKnight] = 0b01000010ul;
-        figures[EnemyPawn] = 0b11111111ul << 8;
-    }
+    figures[WhiteKing] = whiteKingStartPos;
+    figures[WhiteQueen] = whiteQueenStartPos;
+    figures[WhiteRook] = whiteRookStartPos;
+    figures[WhiteBishop] = whiteBishopStartPos;
+    figures[WhiteKnight] = whiteKnightStartPos;
+    figures[WhitePawn] = whitePawnStartPos;
+    figures[BlackKing] = blackKingStartPos;
+    figures[BlackQueen] = blackQueenStartPos;
+    figures[BlackRook] = blackRookStartPos;
+    figures[BlackBishop] = blackBishopStartPos;
+    figures[BlackKnight] = blackKnightStartPos;
+    figures[BlackPawn] = blackPawnStartPos;
     fillCaches();
 }
 
@@ -367,48 +334,71 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
         result.figures[EnemyKnight] &= ~move.moveTo;
         result.figures[EnemyPawn] &= ~move.moveTo;
     }
-    if (isKing(move.turnFrom)) {
-        if (move.moveFrom == blackKingStartPos) {
-            if (move.moveTo == (blackKingStartPos << 2)) {
-                assert(castling[0] && (figures[None] & castling1Fields) == castling1Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~(0b10000000ul << 56);
-                result.figures[OwnRook] |= 0b00100000ul << 56;
-                result.figures[OwnFigure] &= ~(0b10000000ul << 56);
-                result.figures[OwnFigure] |= 0b00100000ul << 56;
-            }
-            else if (move.moveTo == blackKingStartPos >> 3) {
-                assert(castling[1] && (figures[None] & castling2Fields) == castling2Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~(0b00000001ul << 56);
-                result.figures[OwnRook] |= 0b00000100ul << 56;
-                result.figures[OwnFigure] &= ~(0b00000001ul << 56);
-                result.figures[OwnFigure] |= 0b00000100ul << 56;
-            }
+    // TODO(mstaff): improve performance of this part - no need to check everytime
+    if (isRook(move.turnFrom)) {
+        if (move.moveFrom == castling1RookStart) {
+            result.castling[0] = false;
         }
-        else if (move.moveFrom == whiteKingStartPos) {
-            if (move.moveTo == (whiteKingStartPos << 2)) {
-                assert(castling[0] && (figures[None] & castling3Fields) == castling3Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~0b10000000ul;
-                result.figures[OwnRook] |= 0b00100000ul;
-                result.figures[OwnFigure] &= ~0b10000000ul;
-                result.figures[OwnFigure] |= 0b00100000ul;
-            }
-            else if (move.moveTo == whiteKingStartPos >> 3) {
-                assert(castling[1] && (figures[None] & castling4Fields) == castling4Fields && "Castling is blocked!");
-                result.figures[OwnRook] &= ~0b00000001ul;
-                result.figures[OwnRook] |= 0b00000100ul;
-                result.figures[OwnFigure] &= ~0b00000001ul;
-                result.figures[OwnFigure] |= 0b00000100ul;
-            }
+        else if (move.moveFrom == castling2RookStart) {
+            result.castling[1] = false;
         }
-        result.castling[2] = false;
-        result.castling[3] = false;
+        else if (move.moveFrom == castling3RookStart) {
+            result.castling[2] = false;
+        }
+        else if (move.moveFrom == castling4RookStart) {
+            result.castling[3] = false;
+        }
     }
-    else {
-        result.castling[2] = castling[0];
-        result.castling[3] = castling[1];
+    else if (isKing(move.turnFrom)) {
+        if (move.turnFrom == WhiteKing) {
+            if (move.moveFrom == whiteKingStartPos) {
+                if (move.moveTo == castling1Target) {
+                    assert(
+                        castling[0] && (figures[WhiteRook] & castling1RookStart) == castling1RookStart &&
+                        (figures[None] & castling1Fields) == castling1Fields && "Castling is blocked!");
+                    result.figures[WhiteRook] &= ~castling1RookStart;
+                    result.figures[WhiteRook] |= castling1RookTarget;
+                    result.figures[WhiteFigure] &= ~castling1RookStart;
+                    result.figures[WhiteFigure] |= castling1RookTarget;
+                }
+                if (move.moveTo == castling2Target) {
+                    assert(
+                        castling[1] && (figures[WhiteRook] & castling2RookStart) == castling2RookStart &&
+                        (figures[None] & castling2Fields) == castling2Fields && "Castling is blocked!");
+                    result.figures[WhiteRook] &= ~castling2RookStart;
+                    result.figures[WhiteRook] |= castling2RookTarget;
+                    result.figures[WhiteFigure] &= ~castling2RookStart;
+                    result.figures[WhiteFigure] |= castling2RookTarget;
+                }
+            }
+            result.castling[0] = false;
+            result.castling[1] = false;
+        }
+        else if (move.turnFrom == BlackKing) {
+            if (move.turnTo == blackKingStartPos) {
+                if (move.moveTo == castling3Target) {
+                    assert(
+                        castling[2] && (figures[WhiteRook] & castling3RookStart) == castling3RookStart &&
+                        (figures[None] & castling3Fields) == castling3Fields && "Castling is blocked!");
+                    result.figures[WhiteRook] &= ~castling3RookStart;
+                    result.figures[WhiteRook] |= castling3RookTarget;
+                    result.figures[WhiteFigure] &= ~castling3RookStart;
+                    result.figures[WhiteFigure] |= castling3RookTarget;
+                }
+                if (move.moveTo == castling4Target) {
+                    assert(
+                        castling[3] && (figures[WhiteRook] & castling4RookStart) == castling4RookStart &&
+                        (figures[None] & castling4Fields) == castling4Fields && "Castling is blocked!");
+                    result.figures[WhiteRook] &= ~castling4RookStart;
+                    result.figures[WhiteRook] |= castling4RookTarget;
+                    result.figures[WhiteFigure] &= ~castling4RookStart;
+                    result.figures[WhiteFigure] |= castling4RookTarget;
+                }
+            }
+            result.castling[2] = false;
+            result.castling[3] = false;
+        }
     }
-    result.castling[0] = castling[2];
-    result.castling[1] = castling[3];
     assert(isCacheCoherent());
     result.figures[AnyFigure] = result.figures[OwnFigure] | result.figures[EnemyFigure];
     result.figures[None] = ~result.figures[AnyFigure];
