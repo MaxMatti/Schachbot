@@ -1,4 +1,4 @@
-#include "bot.hpp"
+#include "bot2.hpp"
 #include "move.hpp"
 
 std::string printDuration(duration time) {
@@ -25,52 +25,52 @@ std::string printDurationSince(time_point start) { return printDuration(std::chr
 Bot::Bot() {
     values[None] = 0;
     values[AnyFigure] = 0;
-    values[WhiteKing] = 1000;
-    values[WhiteQueen] = 9;
-    values[WhiteRook] = 5;
-    values[WhiteBishop] = 3;
-    values[WhiteKnight] = 3;
-    values[WhitePawn] = 1;
-    values[WhiteFigure] = 1000;
-    values[BlackKing] = -values[WhiteKing];
-    values[BlackQueen] = -values[WhiteQueen];
-    values[BlackRook] = -values[WhiteRook];
-    values[BlackBishop] = -values[WhiteBishop];
-    values[BlackKnight] = -values[WhiteKnight];
-    values[BlackPawn] = -values[WhitePawn];
-    values[BlackFigure] = values[WhiteFigure];
+    values[OwnKing] = 1000;
+    values[OwnQueen] = 9;
+    values[OwnRook] = 5;
+    values[OwnBishop] = 3;
+    values[OwnKnight] = 3;
+    values[OwnPawn] = 1;
+    values[OwnFigure] = 1000;
+    values[EnemyKing] = -values[OwnKing];
+    values[EnemyQueen] = -values[OwnQueen];
+    values[EnemyRook] = -values[OwnRook];
+    values[EnemyBishop] = -values[OwnBishop];
+    values[EnemyKnight] = -values[OwnKnight];
+    values[EnemyPawn] = -values[OwnPawn];
+    values[EnemyFigure] = values[OwnFigure];
     strengths[None] = 0;
     strengths[AnyFigure] = 0;
-    strengths[WhiteKing] = 1;
-    strengths[WhiteQueen] = 9;
-    strengths[WhiteRook] = 5;
-    strengths[WhiteBishop] = 3;
-    strengths[WhiteKnight] = 3;
-    strengths[WhitePawn] = 1;
-    strengths[WhiteFigure] = 1;
-    strengths[BlackKing] = -strengths[WhiteKing];
-    strengths[BlackQueen] = -strengths[WhiteQueen];
-    strengths[BlackRook] = -strengths[WhiteRook];
-    strengths[BlackBishop] = -strengths[WhiteBishop];
-    strengths[BlackKnight] = -strengths[WhiteKnight];
-    strengths[BlackPawn] = -strengths[WhitePawn];
-    strengths[BlackFigure] = strengths[WhiteFigure];
+    strengths[OwnKing] = 1;
+    strengths[OwnQueen] = 9;
+    strengths[OwnRook] = 5;
+    strengths[OwnBishop] = 3;
+    strengths[OwnKnight] = 3;
+    strengths[OwnPawn] = 1;
+    strengths[OwnFigure] = 1;
+    strengths[EnemyKing] = -strengths[OwnKing];
+    strengths[EnemyQueen] = -strengths[OwnQueen];
+    strengths[EnemyRook] = -strengths[OwnRook];
+    strengths[EnemyBishop] = -strengths[OwnBishop];
+    strengths[EnemyKnight] = -strengths[OwnKnight];
+    strengths[EnemyPawn] = -strengths[OwnPawn];
+    strengths[EnemyFigure] = strengths[OwnFigure];
     weaknesses[None] = 0;
     weaknesses[AnyFigure] = 0;
-    weaknesses[WhiteKing] = 1000;
-    weaknesses[WhiteQueen] = 9;
-    weaknesses[WhiteRook] = 5;
-    weaknesses[WhiteBishop] = 3;
-    weaknesses[WhiteKnight] = 3;
-    weaknesses[WhitePawn] = 1;
-    weaknesses[WhiteFigure] = 1;
-    weaknesses[BlackKing] = -weaknesses[WhiteKing];
-    weaknesses[BlackQueen] = -weaknesses[WhiteQueen];
-    weaknesses[BlackRook] = -weaknesses[WhiteRook];
-    weaknesses[BlackBishop] = -weaknesses[WhiteBishop];
-    weaknesses[BlackKnight] = -weaknesses[WhiteKnight];
-    weaknesses[BlackPawn] = -weaknesses[WhitePawn];
-    weaknesses[BlackFigure] = weaknesses[WhiteFigure];
+    weaknesses[OwnKing] = 1000;
+    weaknesses[OwnQueen] = 9;
+    weaknesses[OwnRook] = 5;
+    weaknesses[OwnBishop] = 3;
+    weaknesses[OwnKnight] = 3;
+    weaknesses[OwnPawn] = 1;
+    weaknesses[OwnFigure] = 1;
+    weaknesses[EnemyKing] = -weaknesses[OwnKing];
+    weaknesses[EnemyQueen] = -weaknesses[OwnQueen];
+    weaknesses[EnemyRook] = -weaknesses[OwnRook];
+    weaknesses[EnemyBishop] = -weaknesses[OwnBishop];
+    weaknesses[EnemyKnight] = -weaknesses[OwnKnight];
+    weaknesses[EnemyPawn] = -weaknesses[OwnPawn];
+    weaknesses[EnemyFigure] = weaknesses[OwnFigure];
 }
 
 Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator)

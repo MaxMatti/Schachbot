@@ -14,7 +14,7 @@ def interpretBoardString(boardString):
         else:
             print("Unknown Symbol: " + i)
     if len(result) < 64:
-        result += [""] * (64 - len(result))
+        result += [" "] * (64 - len(result))
     return result
 
 def main():

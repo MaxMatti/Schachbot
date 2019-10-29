@@ -19,3 +19,31 @@ std::ostream& operator<<(std::ostream& stream, const Move& move) {
 (char) ('a' + __builtin_ctzll(move.moveTo) % 8) << 8 - __builtin_ctzll(move.moveTo) / 8; return stream;
 }
 */
+
+bool isValidMove(Move move, std::uint64_t obstacles) {
+    if (isKing(move.turnFrom)) {
+        return isValidKingMove(move.moveFrom, move.moveTo);
+    }
+    else if (isQueen(move.turnFrom)) {
+        return isValidQueenMove(move.moveFrom, move.moveTo, obstacles);
+    }
+    else if (isRook(move.turnFrom)) {
+        return isValidRookMove(move.moveFrom, move.moveTo, obstacles);
+    }
+    else if (isBishop(move.turnFrom)) {
+        return isValidBishopMove(move.moveFrom, move.moveTo, obstacles);
+    }
+    else if (isKnight(move.turnFrom)) {
+        return isValidKnightMove(move.moveFrom, move.moveTo, obstacles);
+    }
+    else if (isPawn(move.turnFrom)) {
+        if (move.turnFrom == WhitePawn) {
+            return isValidPawnMove<true>(move.moveFrom, move.moveTo, obstacles);
+        }
+        else if (move.turnFrom == BlackPawn) {
+            return isValidPawnMove<false>(move.moveFrom, move.moveTo, obstacles);
+        }
+    }
+    assert(false && "Cannot test validity of moves for this type of piece!");
+    return false;
+}

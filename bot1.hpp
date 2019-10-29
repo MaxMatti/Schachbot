@@ -73,7 +73,7 @@ Move Bot::getMove(BoardWrapper board) {
 
 template <std::size_t depth, bool loud, bool amIWhite>
 Move Bot::getMove(Board<amIWhite> board) {
-    auto start [[maybe_unused]] = std::chrono::steady_clock::now();
+    auto start[[maybe_unused]] = std::chrono::steady_clock::now();
     Move bestMove = board.getFirstValidMove();
     // This number needs to be converted between positive and negative without any loss, thus the formula.
     int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
@@ -94,110 +94,63 @@ Move Bot::getMove(Board<amIWhite> board) {
 
 template <std::size_t depth, bool amIWhite>
 int Bot::getScore(
-    Board<amIWhite> board, int bestPreviousScore [[maybe_unused]], int worstPreviousScore [[maybe_unused]]) {
+    Board<amIWhite> board, int bestPreviousScore[[maybe_unused]], int worstPreviousScore[[maybe_unused]]) {
     if constexpr (depth == 0) {
         ++counter;
     }
-    if (board.figures[WhiteKing] == 0) {
+    if (board.figures[OwnKing] == 0) {
         return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
     }
-    if (board.figures[BlackKing] == 0) {
+    if (board.figures[EnemyKing] == 0) {
         return std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
     }
     if constexpr (depth == 0) {
         int result{0};
         static_assert(arraySize<decltype(values)>() >= arraySize<decltype(board.figures)>());
-        for (auto i : {board.OwnQueen, board.OwnRook, board.OwnBishop, board.OwnKnight, board.OwnPawn}) {
-            result += __builtin_popcountll(board.figures[i]) * values[i] * values[board.OwnFigure];
+        for (auto i : {OwnQueen, OwnRook, OwnBishop, OwnKnight, OwnPawn}) {
+            result += __builtin_popcountll(board.figures[i]) * values[i] * values[OwnFigure];
         }
-        for (auto i : {board.EnemyQueen, board.EnemyRook, board.EnemyBishop, board.EnemyKnight, board.EnemyPawn}) {
-            result += __builtin_popcountll(board.figures[i]) * values[i] * values[board.EnemyFigure];
+        for (auto i : {EnemyQueen, EnemyRook, EnemyBishop, EnemyKnight, EnemyPawn}) {
+            result += __builtin_popcountll(board.figures[i]) * values[i] * values[EnemyFigure];
         }
         board.forEachValidMove([&](const Move& move) {
-            result += strengths[move.turnFrom] * strengths[board.OwnFigure];
-            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[board.EnemyFigure];
+            result += strengths[move.turnFrom] * strengths[OwnFigure];
+            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[EnemyFigure];
         });
         Board<!amIWhite> invertedBoard(board);
         invertedBoard.forEachValidMove([&](const Move& move) {
-            result += strengths[move.turnFrom] * strengths[board.EnemyFigure];
-            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[board.OwnFigure];
+            result += strengths[move.turnFrom] * strengths[EnemyFigure];
+            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[OwnFigure];
         });
         return result;
     }
     else {
-        std::vector<std::tuple<Move, Board<amIWhite>, int, int>> situations;
-        situations.reserve(64ul);
         // this number needs to be within the range set by getMove for bestScore.
         int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()) + 1};
         int shallowScore = getScore<0>(board, bestPreviousScore, worstPreviousScore);
-        board.forEachValidMove([&](const Move& move) { situations.push_back({move, board.applyMove(move), 0, 0}); });
-        for (auto& it : situations) {
-            std::get<2>(it) = -getScore<0>(std::get<1>(it), -worstPreviousScore, -bestPreviousScore);
-        }
-        constexpr const static size_t pruningCounter = 10;
-        if (situations.size() > pruningCounter) {
-            std::partial_sort(
-                situations.begin(), situations.begin() + pruningCounter, situations.end(), [](auto a, auto b) {
-                    return std::get<2>(a) > std::get<2>(b);
-                });
-            if constexpr (depth > 3) {
-                for (auto it = situations.begin(); it < situations.begin() + pruningCounter; ++it) {
-                    if (std::get<1>(*it).isThreatened(std::get<1>(*it).figures[WhiteKing])) {
-                        std::get<2>(*it) = -bestScore;
-                    }
-                    int doubleMovePruningScore =
-                        getScore<depth % 2 + 2>(std::get<1>(*it), bestPreviousScore, worstPreviousScore);
-                    if (doubleMovePruningScore < shallowScore * 2 + 100) {
-                        std::get<2>(*it) = -bestScore;
-                    }
-                }
-                std::partial_sort(
-                    situations.begin(), situations.begin() + pruningCounter, situations.end(), [](auto a, auto b) {
-                        return std::get<2>(a) > std::get<2>(b);
-                    });
-            }
-        }
-        for (auto& it : situations) {
+        board.forEachValidMove([&](const Move& move) {
             // alpha-beta-pruning
             if (bestScore >= bestPreviousScore) {
-                break;
+                return;
             }
-            Board<!amIWhite> tmp{std::get<1>(it)};
+            // double-move-pruning and avoiding to run into check
+            if constexpr (depth > 3) {
+                Board<amIWhite> doubleMovePruningBoard = board.applyMove(move);
+                if (doubleMovePruningBoard.isThreatened(doubleMovePruningBoard.figures[OwnKing])) {
+                    return;
+                }
+                int doubleMovePruningScore =
+                    getScore<depth % 2 + 2>(doubleMovePruningBoard, bestPreviousScore, worstPreviousScore);
+                if (doubleMovePruningScore < shallowScore * 2 + 100) {
+                    return;
+                }
+            }
+            Board<!amIWhite> tmp = board.applyMove(move);
             int currentScore = -getScore<depth - 1>(tmp, -worstPreviousScore, -bestPreviousScore);
             if (currentScore > bestScore) {
                 bestScore = currentScore;
             }
-        }
-        return bestScore; /*
-         size_t i = 0;
-         size_t j = 0;
-         board.forEachValidMove([&](const Move& move) {
-             ++i;
-             // alpha-beta-pruning
-             if (bestScore >= bestPreviousScore) {
-                 return;
-             }
-             ++j;
-             // double-move-pruning and avoiding to run into check
-             if constexpr (depth > 3) {
-                 Board<amIWhite> doubleMovePruningBoard = board.applyMove(move);
-                 if (doubleMovePruningBoard.isThreatened(doubleMovePruningBoard.figures[WhiteKing])) {
-                     return;
-                 }
-                 int doubleMovePruningScore =
-                     getScore<depth % 2 + 2>(doubleMovePruningBoard, bestPreviousScore, worstPreviousScore);
-                 if (doubleMovePruningScore < shallowScore * 2 + 100) {
-                     return;
-                 }
-             }
-             Board<!amIWhite> tmp = board.applyMove(move);
-             int currentScore = -getScore<depth - 1>(tmp, -worstPreviousScore, -bestPreviousScore);
-             if (currentScore > bestScore) {
-                 bestScore = currentScore;
-             }
-         });
-         ++moveCounter1[i];
-         ++moveCounter2[j];
-         return bestScore;*/
+        });
+        return bestScore;
     }
 }

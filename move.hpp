@@ -7,8 +7,8 @@
 #include <sstream>
 #include <utility>
 
-constexpr const static std::uint64_t whiteKingStartPos = 0b00010000ul << 56;
-constexpr const static std::uint64_t blackKingStartPos = 0b00010000ul;
+constexpr const static std::uint64_t whiteKingStartPos = 0b00010000ul;
+constexpr const static std::uint64_t blackKingStartPos = 0b00010000ul << 56;
 constexpr const static std::uint64_t castling1Fields = 0b01100000ul << 56;
 constexpr const static std::uint64_t castling2Fields = 0b00001110ul << 56;
 constexpr const static std::uint64_t castling3Fields = 0b01100000ul;
@@ -400,7 +400,7 @@ constexpr bool isValidPawnMove(std::uint64_t from, std::uint64_t to, std::uint64
     return result;
 }
 
-template <bool amIWhite, piece fig>
+template <piece fig>
 constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
     if constexpr (isKing(fig)) {
         return isValidKingMove(from, to);
@@ -418,42 +418,15 @@ constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t o
         return isValidKnightMove(from, to, obstacles);
     }
     else if constexpr (isPawn(fig)) {
-        if (fig == OwnPawn) {
-            return isValidPawnMove<amIWhite>(from, to, obstacles);
+        if constexpr (fig == WhitePawn) {
+            return isValidPawnMove<true>(from, to, obstacles);
         }
-        else if (fig == EnemyPawn) {
-            return isValidPawnMove<!amIWhite>(from, to, obstacles);
+        else if constexpr (fig == BlackPawn) {
+            return isValidPawnMove<false>(from, to, obstacles);
         }
     }
     assert(false && "Cannot test validity of moves for this type of piece!");
     return false;
 }
 
-template <bool amIWhite>
-bool isValidMove(Move move, std::uint64_t obstacles) {
-    if (isKing(move.turnFrom)) {
-        return isValidKingMove(move.moveFrom, move.moveTo);
-    }
-    else if (isQueen(move.turnFrom)) {
-        return isValidQueenMove(move.moveFrom, move.moveTo, obstacles);
-    }
-    else if (isRook(move.turnFrom)) {
-        return isValidRookMove(move.moveFrom, move.moveTo, obstacles);
-    }
-    else if (isBishop(move.turnFrom)) {
-        return isValidBishopMove(move.moveFrom, move.moveTo, obstacles);
-    }
-    else if (isKnight(move.turnFrom)) {
-        return isValidKnightMove(move.moveFrom, move.moveTo, obstacles);
-    }
-    else if (isPawn(move.turnFrom)) {
-        if (move.turnFrom == OwnPawn) {
-            return isValidPawnMove<amIWhite>(move.moveFrom, move.moveTo, obstacles);
-        }
-        else if (move.turnFrom == EnemyPawn) {
-            return isValidPawnMove<!amIWhite>(move.moveFrom, move.moveTo, obstacles);
-        }
-    }
-    assert(false && "Cannot test validity of moves for this type of piece!");
-    return false;
-}
+bool isValidMove(Move move, std::uint64_t obstacles);
