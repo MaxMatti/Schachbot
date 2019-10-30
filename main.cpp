@@ -13,7 +13,7 @@
 static std::chrono::steady_clock::time_point totalStart;
 static std::int64_t totalMoves;
 
-[[noreturn]] void signal_handler(int signal [[maybe_unused]]);
+[[noreturn]] void signal_handler(int signal[[maybe_unused]]);
 
 std::string read_board() {
     std::string result;
@@ -129,7 +129,9 @@ void justificateMove(Bot& bot, Board<amIWhite>& board, P pos) {
 
 template <std::size_t depth, bool loud, bool amIWhite>
 Move getMove(Bot& bot, Board<amIWhite>& board) {
-    std::cout << "Depth: " << depth << std::endl;
+    if constexpr (loud) {
+        std::cout << "Depth: " << depth << std::endl;
+    }
     auto chosenMove = bot.getMove<depth, loud>(board);
     // bot.resetStats();
     if constexpr (loud) {
@@ -141,7 +143,7 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
     return chosenMove;
 }
 
-int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
+int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
     std::signal(SIGINT, signal_handler);
     std::signal(SIGABRT, signal_handler);
     std::string initBoard =
@@ -178,7 +180,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     startMoves.push_back("f1c4");
     startMoves.push_back("e1g1");
     while (currentSituation.isValid() && sameCounter < 10) {
-        std::cout << currentSituation;
+        // std::cout << currentSituation;
         using namespace std::chrono_literals;
         auto start = std::chrono::steady_clock::now();
         totalMoves += currentBot.counter;
@@ -225,9 +227,8 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
             std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<20, false>(currentBot, currentSituation);
         }*/
-        std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms.\n";
-        std::cout << "Evaluated " << currentBot.counter << " Moves (" << currentBot.counter / (getMsSince(start) + 1)
-                  << "/ms).\n";
+        std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms out of " << currentBot.counter
+                  << " moves (" << currentBot.counter / (getMsSince(start) + 1) << "/ms).\n";
         decltype(otherSituation) tmp1 = std::move(otherSituation);
         otherSituation = currentSituation.applyMove(chosenMove);
         if (otherSituation == tmp1) {
@@ -238,7 +239,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
             break;
         }
 
-        std::cout << otherSituation;
+        // std::cout << otherSituation;
         start = std::chrono::steady_clock::now();
         totalMoves += currentBot.counter;
         currentBot.counter = 0;
@@ -275,9 +276,8 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
             std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
             chosenMove = getMove<20, false>(currentBot, otherSituation);
         }*/
-        std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms.\n";
-        std::cout << "Evaluated " << currentBot.counter << " Moves (" << currentBot.counter / (getMsSince(start) + 1)
-                  << "/ms).\n";
+        std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms out of " << currentBot.counter
+                  << " moves (" << currentBot.counter / (getMsSince(start) + 1) << "/ms).\n";
         decltype(currentSituation) tmp2 = std::move(currentSituation);
         currentSituation = otherSituation.applyMove(chosenMove);
         if (currentSituation == tmp2) {
@@ -332,7 +332,7 @@ void printHistogram(T&& t) {
     }
 }
 
-[[noreturn]] void signal_handler(int signal [[maybe_unused]]) {
+[[noreturn]] void signal_handler(int signal[[maybe_unused]]) {
     std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
     // std::cout << functionCallCounter[0][1] << " objects, function calls:\n";
     /*for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
