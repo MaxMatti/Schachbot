@@ -355,6 +355,19 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
         else if (move.moveFrom & blackPawnStartPos && move.moveTo & blackPawnJumpPos) {
             result.enPassent = move.moveFrom << 8;
         }
+        else if (move.moveTo & enPassent) {
+            if (move.moveFrom & whitePawnJumpPos) {
+                result.figures[EnemyPawn] &= ~(move.moveTo >> 8);
+                result.figures[EnemyFigure] &= ~(move.moveTo >> 8);
+            }
+            else if (move.moveFrom & blackPawnJumpPos) {
+                result.figures[EnemyPawn] &= ~(move.moveTo << 8);
+                result.figures[EnemyFigure] &= ~(move.moveTo << 8);
+            }
+            else {
+                assert(false && "Malformed en passent - invalid move!");
+            }
+        }
     }
     else if (isKing(move.turnFrom)) {
         if (move.turnFrom == WhiteKing) {
