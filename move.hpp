@@ -29,8 +29,8 @@ constexpr const static std::uint64_t castling1Target = 0b01000000ul << 56;
 constexpr const static std::uint64_t castling1Fields = 0b01100000ul << 56;
 
 constexpr const static std::uint64_t castling2RookStart = 0b00000001ul << 56;
-constexpr const static std::uint64_t castling2RookTarget = 0b00000100ul << 56;
-constexpr const static std::uint64_t castling2Target = 0b00000010ul << 56;
+constexpr const static std::uint64_t castling2RookTarget = 0b00001000ul << 56;
+constexpr const static std::uint64_t castling2Target = 0b00000100ul << 56;
 constexpr const static std::uint64_t castling2Fields = 0b00001110ul << 56;
 
 constexpr const static std::uint64_t castling3RookStart = 0b10000000ul;
@@ -39,8 +39,8 @@ constexpr const static std::uint64_t castling3Target = 0b01000000ul;
 constexpr const static std::uint64_t castling3Fields = 0b01100000ul;
 
 constexpr const static std::uint64_t castling4RookStart = 0b00000001ul;
-constexpr const static std::uint64_t castling4RookTarget = 0b00000100ul;
-constexpr const static std::uint64_t castling4Target = 0b00000010ul;
+constexpr const static std::uint64_t castling4RookTarget = 0b00001000ul;
+constexpr const static std::uint64_t castling4Target = 0b00000100ul;
 constexpr const static std::uint64_t castling4Fields = 0b00001110ul;
 
 enum Direction : std::uint8_t {
@@ -327,8 +327,8 @@ constexpr bool forEachPos(std::uint64_t positions, F&& func) {
 constexpr bool isCastling(std::uint64_t from, std::uint64_t to) {
     assert(__builtin_popcountll(from) == 1);
     assert(__builtin_popcountll(to) == 1);
-    return (from == whiteKingStartPos && (to == whiteKingStartPos << 2 || to == whiteKingStartPos >> 3)) ||
-        (from == blackKingStartPos && (to == blackKingStartPos << 2 || to == blackKingStartPos >> 3));
+    return (from == whiteKingStartPos && (to == castling1Target || to == castling2Target)) ||
+        (from == blackKingStartPos && (to == castling3Target || to == castling4Target));
 }
 
 constexpr bool isValidKingMove(std::uint64_t from, std::uint64_t to) {

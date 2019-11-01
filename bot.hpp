@@ -98,10 +98,10 @@ int Bot::getScore(
     if constexpr (depth == 0) {
         ++counter;
     }
-    if (board.figures[WhiteKing] == 0) {
+    if (board.figures[board.OwnKing] == 0) {
         return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
     }
-    if (board.figures[BlackKing] == 0) {
+    if (board.figures[board.EnemyKing] == 0) {
         return std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
     }
     if constexpr (depth == 0) {
@@ -142,7 +142,7 @@ int Bot::getScore(
                 });
             if constexpr (depth > 3) {
                 for (auto it = situations.begin(); it < situations.begin() + pruningCounter; ++it) {
-                    if (std::get<1>(*it).isThreatened(std::get<1>(*it).figures[WhiteKing])) {
+                    if (std::get<1>(*it).isThreatened(std::get<1>(*it).figures[board.OwnKing])) {
                         std::get<2>(*it) = -bestScore;
                     }
                     int doubleMovePruningScore =

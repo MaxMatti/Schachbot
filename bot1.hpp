@@ -98,29 +98,29 @@ int Bot::getScore(
     if constexpr (depth == 0) {
         ++counter;
     }
-    if (board.figures[OwnKing] == 0) {
+    if (board.figures[board.OwnKing] == 0) {
         return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
     }
-    if (board.figures[EnemyKing] == 0) {
+    if (board.figures[board.EnemyKing] == 0) {
         return std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
     }
     if constexpr (depth == 0) {
         int result{0};
         static_assert(arraySize<decltype(values)>() >= arraySize<decltype(board.figures)>());
-        for (auto i : {OwnQueen, OwnRook, OwnBishop, OwnKnight, OwnPawn}) {
-            result += __builtin_popcountll(board.figures[i]) * values[i] * values[OwnFigure];
+        for (auto i : {board.OwnQueen, board.OwnRook, board.OwnBishop, board.OwnKnight, board.OwnPawn}) {
+            result += __builtin_popcountll(board.figures[i]) * values[i] * values[board.OwnFigure];
         }
-        for (auto i : {EnemyQueen, EnemyRook, EnemyBishop, EnemyKnight, EnemyPawn}) {
-            result += __builtin_popcountll(board.figures[i]) * values[i] * values[EnemyFigure];
+        for (auto i : {board.EnemyQueen, board.EnemyRook, board.EnemyBishop, board.EnemyKnight, board.EnemyPawn}) {
+            result += __builtin_popcountll(board.figures[i]) * values[i] * values[board.EnemyFigure];
         }
         board.forEachValidMove([&](const Move& move) {
-            result += strengths[move.turnFrom] * strengths[OwnFigure];
-            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[EnemyFigure];
+            result += strengths[move.turnFrom] * strengths[board.OwnFigure];
+            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[board.EnemyFigure];
         });
         Board<!amIWhite> invertedBoard(board);
         invertedBoard.forEachValidMove([&](const Move& move) {
-            result += strengths[move.turnFrom] * strengths[EnemyFigure];
-            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[OwnFigure];
+            result += strengths[move.turnFrom] * strengths[board.EnemyFigure];
+            result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[board.OwnFigure];
         });
         return result;
     }
@@ -136,7 +136,7 @@ int Bot::getScore(
             // double-move-pruning and avoiding to run into check
             if constexpr (depth > 3) {
                 Board<amIWhite> doubleMovePruningBoard = board.applyMove(move);
-                if (doubleMovePruningBoard.isThreatened(doubleMovePruningBoard.figures[OwnKing])) {
+                if (doubleMovePruningBoard.isThreatened(doubleMovePruningBoard.figures[board.OwnKing])) {
                     return;
                 }
                 int doubleMovePruningScore =
