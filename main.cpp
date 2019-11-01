@@ -13,7 +13,7 @@
 static std::chrono::steady_clock::time_point totalStart;
 static std::int64_t totalMoves;
 
-[[noreturn]] void signal_handler(int signal[[maybe_unused]]);
+[[noreturn]] void signal_handler(int signal [[maybe_unused]]);
 
 std::string read_board() {
     std::string result;
@@ -143,7 +143,7 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
     return chosenMove;
 }
 
-int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
+int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     std::signal(SIGINT, signal_handler);
     std::signal(SIGABRT, signal_handler);
     std::string initBoard =
@@ -332,7 +332,7 @@ void printHistogram(T&& t) {
     }
 }
 
-[[noreturn]] void signal_handler(int signal[[maybe_unused]]) {
+[[noreturn]] void signal_handler(int signal [[maybe_unused]]) {
     std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
     // std::cout << functionCallCounter[0][1] << " objects, function calls:\n";
     /*for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {

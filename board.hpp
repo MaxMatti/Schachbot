@@ -382,13 +382,15 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
                     result.figures[WhiteFigure] |= castling1RookTarget;
                 }
                 if (move.moveTo == castling2Target) {
-					if (!castling[1]) {
-						std::cout << "====1\n" << *this;
-					} else if ((figures[WhiteRook] & castling2RookStart) != castling2RookStart) {
-						std::cout << "====2\n" << *this;
-					} else if ((figures[None] & castling2Fields) != castling2Fields) {
-						std::cout << "====3\n" << *this;
-					}
+                    if (!castling[1]) {
+                        std::cout << "====1\n" << *this;
+                    }
+                    else if ((figures[WhiteRook] & castling2RookStart) != castling2RookStart) {
+                        std::cout << "====2\n" << *this;
+                    }
+                    else if ((figures[None] & castling2Fields) != castling2Fields) {
+                        std::cout << "====3\n" << *this;
+                    }
                     assert(
                         castling[1] && (figures[WhiteRook] & castling2RookStart) == castling2RookStart &&
                         (figures[None] & castling2Fields) == castling2Fields && "Castling is blocked!");
@@ -461,37 +463,33 @@ constexpr void Board<amIWhite>::forEachKingMove(F&& func) const {
         checkedMove<W, 1>(currentPos, OwnKing, OwnKing, func);
         checkedMove<NW, 1>(currentPos, OwnKing, OwnKing, func);
         if constexpr (amIWhite) {
-			if (currentPos == whiteKingStartPos) {
-				if (castling[0] &&
-					(figures[OwnRook] & castling1RookStart) == castling1RookStart &&
-					(figures[None] & castling1Fields) == castling1Fields &&
-					!isThreatened(whiteKingStartPos | castling1RookTarget | castling1Target)) {
-					checkedMove<EE, 1>(currentPos, OwnKing, OwnKing, func);
-				}
-				if (castling[1] &&
-					(figures[OwnRook] & castling2RookStart) == castling2RookStart &&
-					(figures[None] & castling2Fields) == castling2Fields &&
-					!isThreatened(whiteKingStartPos | castling2RookTarget | castling2Target)) {
-					checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
-				}
-			}
-		}
-		else {
-			if (currentPos == blackKingStartPos) {
-				if (castling[2] &&
-					(figures[OwnRook] & castling3RookStart) == castling3RookStart &&
-					(figures[None] & castling3Fields) == castling3Fields &&
-					!isThreatened(whiteKingStartPos | castling3RookTarget | castling3Target)) {
-					checkedMove<EE, 1>(currentPos, OwnKing, OwnKing, func);
-				}
-				if (castling[3] &&
-					(figures[OwnRook] & castling4RookStart) == castling4RookStart &&
-					(figures[None] & castling4Fields) == castling4Fields &&
-					!isThreatened(whiteKingStartPos | castling4RookTarget | castling4Target)) {
-					checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
-				}
-			}
-		}
+            if (currentPos == whiteKingStartPos) {
+                if (castling[0] && (figures[OwnRook] & castling1RookStart) == castling1RookStart &&
+                    (figures[None] & castling1Fields) == castling1Fields &&
+                    !isThreatened(whiteKingStartPos | castling1RookTarget | castling1Target)) {
+                    checkedMove<EE, 1>(currentPos, OwnKing, OwnKing, func);
+                }
+                if (castling[1] && (figures[OwnRook] & castling2RookStart) == castling2RookStart &&
+                    (figures[None] & castling2Fields) == castling2Fields &&
+                    !isThreatened(whiteKingStartPos | castling2RookTarget | castling2Target)) {
+                    checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
+                }
+            }
+        }
+        else {
+            if (currentPos == blackKingStartPos) {
+                if (castling[2] && (figures[OwnRook] & castling3RookStart) == castling3RookStart &&
+                    (figures[None] & castling3Fields) == castling3Fields &&
+                    !isThreatened(whiteKingStartPos | castling3RookTarget | castling3Target)) {
+                    checkedMove<EE, 1>(currentPos, OwnKing, OwnKing, func);
+                }
+                if (castling[3] && (figures[OwnRook] & castling4RookStart) == castling4RookStart &&
+                    (figures[None] & castling4Fields) == castling4Fields &&
+                    !isThreatened(whiteKingStartPos | castling4RookTarget | castling4Target)) {
+                    checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
+                }
+            }
+        }
         return true;
     });
 }
