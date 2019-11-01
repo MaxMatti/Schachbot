@@ -15,28 +15,6 @@ static std::int64_t totalMoves;
 
 [[noreturn]] void signal_handler(int signal [[maybe_unused]]);
 
-std::string read_board() {
-    std::string result;
-    std::string tmp;
-    do {
-        std::getline(std::cin, tmp);
-        if (tmp.empty() && result.empty()) {
-            break;
-        }
-        while (tmp.length() < 8) {
-            tmp += " ";
-        }
-        result += tmp;
-    } while (result.length() < 64);
-    return result.substr(0, 64);
-}
-
-std::string read_move() {
-    std::string result;
-    std::cin >> result;
-    return result;
-}
-
 template <bool amIWhite>
 Move createMove(const Board<amIWhite>& currentSituation, std::string input) {
     std::uint64_t from = 1ul << (63 - (7 - (input[0] - (input[0] < 'I' ? 'A' : 'a')) + (input[1] - '1') * 8));
