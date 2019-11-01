@@ -319,6 +319,5 @@ void printHistogram(T&& t) {
     }
     printHistogram(moveCounter1);
     printHistogram(moveCounter2);*/
-    std::cout << (Board<false>::OwnFigure == BlackFigure) << "\n";
     exit(0);
 }
