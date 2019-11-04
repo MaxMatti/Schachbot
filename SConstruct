@@ -3,7 +3,7 @@ import os
 mainEnv = Environment(
     CC="clang",
     CXX="clang++",
-    CXXFLAGS="-std=c++2a -stdlib=libc++ -Wall -Wextra -O3 -g -fomit-frame-pointer -ftemplate-backtrace-limit=0",
+    CXXFLAGS="-std=c++2a -stdlib=libc++ -Wall -Wextra -O3 -g -mtune=native -march=native -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
     LINKFLAGS="-stdlib=libc++")
 mainEnv['ENV']['TERM'] = os.environ['TERM']
 
@@ -17,7 +17,7 @@ testEnv = Environment(
     LIBPATH=["/usr/include/gtest"])
 testEnv['ENV']['TERM'] = os.environ['TERM']
 
-testEnv.Program(target="gtest", source=["board.test.cpp", "move.test.cpp"])
+#testEnv.Program(target="gtest", source=["board.test.cpp", "move.test.cpp"])
 mainEnv.Program(target="main", source=["main.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
 mainEnv.Program(target="getBotMove", source=["getBotMove.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
 mainEnv.Program(target="getBot1Move", source=["getBot1Move.cpp", "bot1.cpp", "move.cpp", "piece.cpp"])

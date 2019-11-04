@@ -232,7 +232,7 @@ constexpr std::uint64_t getMask() {
 }
 
 template <std::int8_t distance, class F, std::uint64_t mask>
-bool checkedMove(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
+constexpr bool checkedMove(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
     auto startPos = pos;
     pos &= mask;
     if constexpr (distance >= 64 || distance <= -64) {
@@ -248,7 +248,7 @@ bool checkedMove(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
 }
 
 template <std::int8_t distance, std::uint64_t mask>
-bool uncheckedMove(std::uint64_t pos) {
+constexpr bool uncheckedMove(std::uint64_t pos) {
     pos &= mask;
     if constexpr (distance >= 64 || distance <= -64) {
         return false;
@@ -280,18 +280,18 @@ constexpr bool isInDirection(std::uint64_t from, std::uint64_t to, std::uint64_t
 } // namespace hidden
 
 template <Direction dir, std::uint8_t distance, class F>
-bool checkedMove(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
+constexpr bool checkedMove(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
     return hidden::checkedMove<distance * getIntDir(dir), F, hidden::getMask<dir, distance>()>(
         pos, turnFrom, turnTo, std::forward<F>(func));
 }
 
 template <Direction dir, std::uint8_t distance>
-bool uncheckedMove(std::uint64_t pos) {
+constexpr bool uncheckedMove(std::uint64_t pos) {
     return hidden::uncheckedMove<distance * getIntDir(dir), hidden::getMask<dir, distance>()>(pos);
 }
 
 template <Direction dir, std::uint8_t distance, class F>
-bool checkedMoveUntil(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
+constexpr bool checkedMoveUntil(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func) {
     if constexpr (distance > 1) {
         if (!checkedMoveUntil<dir, distance - 1, F>(pos, turnFrom, turnTo, std::forward<F>(func))) {
             return false;
@@ -302,7 +302,7 @@ bool checkedMoveUntil(std::uint64_t pos, piece turnFrom, piece turnTo, F&& func)
 }
 
 template <Direction dir, std::uint8_t distance>
-bool uncheckedMoveUntil(std::uint64_t pos) {
+constexpr bool uncheckedMoveUntil(std::uint64_t pos) {
     if constexpr (distance > 1) {
         if (!uncheckedMoveUntil<dir, distance - 1>(pos)) {
             return false;
@@ -325,19 +325,23 @@ constexpr bool forEachPos(std::uint64_t positions, F&& func) {
 }
 
 constexpr bool isCastling(std::uint64_t from, std::uint64_t to) {
-    assert(__builtin_popcountll(from) == 1);
-    assert(__builtin_popcountll(to) == 1);
-    return (from == whiteKingStartPos && (to == castling1Target || to == castling2Target)) ||
-        (from == blackKingStartPos && (to == castling3Target || to == castling4Target));
+    return ((from & whiteKingStartPos) == whiteKingStartPos &&
+            ((to & castling1Target) == castling1Target || (to & castling2Target) == castling2Target)) ||
+        ((from & blackKingStartPos) == blackKingStartPos &&
+         ((to & castling3Target) == castling3Target || (to & castling4Target) == castling4Target));
 }
 
 constexpr bool isValidKingMove(std::uint64_t from, std::uint64_t to) {
-    assert(__builtin_popcountll(from) == 1);
-    assert(__builtin_popcountll(to) == 1);
-    auto fromOffset = __builtin_ctzll(from);
-    auto toOffset = __builtin_ctzll(to);
-    auto diff = fromOffset > toOffset ? fromOffset - toOffset : toOffset - fromOffset;
-    return diff == 0 || diff == 1 || diff == 7 || diff == 8 || diff == 9 || isCastling(from, to);
+    bool result = false;
+    result |= hidden::isInDirection<N, 1>(from, to, 0ul);
+    result |= hidden::isInDirection<E, 1>(from, to, 0ul);
+    result |= hidden::isInDirection<S, 1>(from, to, 0ul);
+    result |= hidden::isInDirection<W, 1>(from, to, 0ul);
+    result |= hidden::isInDirection<NE, 1>(from, to, 0ul);
+    result |= hidden::isInDirection<SE, 1>(from, to, 0ul);
+    result |= hidden::isInDirection<SW, 1>(from, to, 0ul);
+    result |= hidden::isInDirection<NW, 1>(from, to, 0ul);
+    return result || isCastling(from, to);
 }
 
 constexpr bool isValidQueenMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {

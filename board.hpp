@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+static std::array<std::uint64_t, 16> statistics{
+    0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul};
+
 template <bool amIWhite>
 struct Board {
     std::array<std::uint64_t, 16> figures;
@@ -96,11 +99,8 @@ struct Board {
     template <class F>
     void forEachValidMove(F&& func) const;
 
-    template <piece fig, class F>
-    constexpr bool forEachThreatByFigure(F&& func, std::uint64_t positions) const;
-
-    template <class F>
-    constexpr void forEachThreat(std::uint64_t positions, F&& func) const;
+    template <piece fig>
+    constexpr bool isThreatenedByFigure(std::uint64_t positions) const;
 
     constexpr bool isThreatened(std::uint64_t positions) const;
 };
@@ -466,12 +466,12 @@ constexpr void Board<amIWhite>::forEachKingMove(F&& func) const {
             if (currentPos == whiteKingStartPos) {
                 if (castling[0] && (figures[OwnRook] & castling1RookStart) == castling1RookStart &&
                     (figures[None] & castling1Fields) == castling1Fields &&
-                    !isThreatened(whiteKingStartPos | castling1RookTarget | castling1Target)) {
+                    !isThreatened(currentPos | castling1RookTarget | castling1Target)) {
                     checkedMove<EE, 1>(currentPos, OwnKing, OwnKing, func);
                 }
                 if (castling[1] && (figures[OwnRook] & castling2RookStart) == castling2RookStart &&
                     (figures[None] & castling2Fields) == castling2Fields &&
-                    !isThreatened(whiteKingStartPos | castling2RookTarget | castling2Target)) {
+                    !isThreatened(currentPos | castling2RookTarget | castling2Target)) {
                     checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
                 }
             }
@@ -480,12 +480,12 @@ constexpr void Board<amIWhite>::forEachKingMove(F&& func) const {
             if (currentPos == blackKingStartPos) {
                 if (castling[2] && (figures[OwnRook] & castling3RookStart) == castling3RookStart &&
                     (figures[None] & castling3Fields) == castling3Fields &&
-                    !isThreatened(whiteKingStartPos | castling3RookTarget | castling3Target)) {
+                    !isThreatened(currentPos | castling3RookTarget | castling3Target)) {
                     checkedMove<EE, 1>(currentPos, OwnKing, OwnKing, func);
                 }
                 if (castling[3] && (figures[OwnRook] & castling4RookStart) == castling4RookStart &&
                     (figures[None] & castling4Fields) == castling4Fields &&
-                    !isThreatened(whiteKingStartPos | castling4RookTarget | castling4Target)) {
+                    !isThreatened(currentPos | castling4RookTarget | castling4Target)) {
                     checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
                 }
             }
@@ -605,40 +605,40 @@ std::string Board<amIWhite>::print() const {
         else {
             tmp << "\033[1;40m\033[1;37m";
         }
-        if (figures[OwnKing] & (1ul << i)) {
+        if (figures[WhiteKing] & (1ul << i)) {
             tmp << "K";
         }
-        else if (figures[OwnQueen] & (1ul << i)) {
+        else if (figures[WhiteQueen] & (1ul << i)) {
             tmp << "Q";
         }
-        else if (figures[OwnRook] & (1ul << i)) {
+        else if (figures[WhiteRook] & (1ul << i)) {
             tmp << "R";
         }
-        else if (figures[OwnBishop] & (1ul << i)) {
+        else if (figures[WhiteBishop] & (1ul << i)) {
             tmp << "B";
         }
-        else if (figures[OwnKnight] & (1ul << i)) {
+        else if (figures[WhiteKnight] & (1ul << i)) {
             tmp << "N";
         }
-        else if (figures[OwnPawn] & (1ul << i)) {
+        else if (figures[WhitePawn] & (1ul << i)) {
             tmp << "P";
         }
-        else if (figures[EnemyKing] & (1ul << i)) {
+        else if (figures[BlackKing] & (1ul << i)) {
             tmp << "k";
         }
-        else if (figures[EnemyQueen] & (1ul << i)) {
+        else if (figures[BlackQueen] & (1ul << i)) {
             tmp << "q";
         }
-        else if (figures[EnemyRook] & (1ul << i)) {
+        else if (figures[BlackRook] & (1ul << i)) {
             tmp << "r";
         }
-        else if (figures[EnemyBishop] & (1ul << i)) {
+        else if (figures[BlackBishop] & (1ul << i)) {
             tmp << "b";
         }
-        else if (figures[EnemyKnight] & (1ul << i)) {
+        else if (figures[BlackKnight] & (1ul << i)) {
             tmp << "n";
         }
-        else if (figures[EnemyPawn] & (1ul << i)) {
+        else if (figures[BlackPawn] & (1ul << i)) {
             tmp << "p";
         }
         else {
@@ -730,38 +730,17 @@ void Board<amIWhite>::forEachValidMove(F&& func) const {
 }
 
 template <bool amIWhite>
-template <piece fig, class F>
-constexpr bool Board<amIWhite>::forEachThreatByFigure(F&& func, std::uint64_t positions) const {
-    return forEachPos(figures[fig], [&](std::uint64_t from) {
-        return forEachPos(positions, [&](std::uint64_t to) {
-            // TODO(mstaff): function naming
-            if (::isValidMove<fig>(from, to, figures[AnyFigure], enPassent)) {
-                return func(from);
-            }
-            else {
-                return true;
-            }
-        });
+template <piece fig>
+constexpr bool Board<amIWhite>::isThreatenedByFigure(std::uint64_t positions) const {
+    return !forEachPos(figures[fig], [&](std::uint64_t from) {
+        // TODO(mstaff): function naming
+        return !::isValidMove<fig>(from, positions, figures[AnyFigure], enPassent);
     });
-}
-
-template <bool amIWhite>
-template <class F>
-constexpr void Board<amIWhite>::forEachThreat(std::uint64_t positions, F&& func) const {
-    forEachThreatByFigure<EnemyKing>(std::forward<F>(func), positions) &&
-        forEachThreatByFigure<EnemyQueen>(std::forward<F>(func), positions) &&
-        forEachThreatByFigure<EnemyRook>(std::forward<F>(func), positions) &&
-        forEachThreatByFigure<EnemyBishop>(std::forward<F>(func), positions) &&
-        forEachThreatByFigure<EnemyKnight>(std::forward<F>(func), positions) &&
-        forEachThreatByFigure<EnemyPawn>(std::forward<F>(func), positions);
 }
 
 template <bool amIWhite>
 constexpr bool Board<amIWhite>::isThreatened(std::uint64_t positions) const {
-    bool result = false;
-    forEachThreat(positions, [&](auto) {
-        result = true;
-        return false;
-    });
-    return result;
+    return isThreatenedByFigure<EnemyKing>(positions) | isThreatenedByFigure<EnemyQueen>(positions) |
+        isThreatenedByFigure<EnemyRook>(positions) | isThreatenedByFigure<EnemyBishop>(positions) |
+        isThreatenedByFigure<EnemyKnight>(positions) | isThreatenedByFigure<EnemyPawn>(positions);
 }
