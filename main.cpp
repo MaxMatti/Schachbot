@@ -319,5 +319,6 @@ void printHistogram(T&& t) {
     }
     printHistogram(moveCounter1);
     printHistogram(moveCounter2);*/
+    printHistogram(statistics);
     exit(0);
 }
