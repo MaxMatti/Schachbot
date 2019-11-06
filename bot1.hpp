@@ -26,9 +26,6 @@ constexpr std::size_t arraySize() {
 using time_point = std::chrono::steady_clock::time_point;
 using duration = std::chrono::steady_clock::duration;
 
-static std::array<size_t, 64> moveCounter1;
-static std::array<size_t, 64> moveCounter2;
-
 std::string printDuration(duration time);
 std::string printDurationSince(time_point start);
 

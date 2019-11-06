@@ -26,9 +26,6 @@ constexpr std::size_t arraySize() {
 using time_point = std::chrono::steady_clock::time_point;
 using duration = std::chrono::steady_clock::duration;
 
-static std::array<size_t, 64> moveCounter1;
-static std::array<size_t, 64> moveCounter2;
-
 std::string printDuration(duration time);
 std::string printDurationSince(time_point start);
 
@@ -169,15 +166,11 @@ int Bot::getScore(
             }
         }
         return bestScore; /*
-         size_t i = 0;
-         size_t j = 0;
          board.forEachValidMove([&](const Move& move) {
-             ++i;
              // alpha-beta-pruning
              if (bestScore >= bestPreviousScore) {
                  return;
              }
-             ++j;
              // double-move-pruning and avoiding to run into check
              if constexpr (depth > 3) {
                  Board<amIWhite> doubleMovePruningBoard = board.applyMove(move);
@@ -196,8 +189,6 @@ int Bot::getScore(
                  bestScore = currentScore;
              }
          });
-         ++moveCounter1[i];
-         ++moveCounter2[j];
          return bestScore;*/
     }
 }

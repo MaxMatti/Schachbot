@@ -13,7 +13,7 @@
 static std::chrono::steady_clock::time_point totalStart;
 static std::int64_t totalMoves;
 
-[[noreturn]] void signal_handler(int signal [[maybe_unused]]);
+[[noreturn]] void signal_handler(int signal[[maybe_unused]]);
 
 template <bool amIWhite>
 Move createMove(const Board<amIWhite>& currentSituation, std::string input) {
@@ -121,7 +121,7 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
     return chosenMove;
 }
 
-int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
+int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
     std::signal(SIGINT, signal_handler);
     std::signal(SIGABRT, signal_handler);
     std::string initBoard =
@@ -283,8 +283,13 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
 template <class T>
 void printHistogram(T&& t) {
     size_t termSize = 155;
-    auto totalCallCounter = std::accumulate(t.begin(), t.end(), 0ul);
-    auto maxCallCounter = std::max_element(t.begin(), t.end());
+    auto totalCallCounter = std::max(std::accumulate(t.begin(), t.end(), 0ul), 1ul);
+    auto maxCallCounter = *std::max_element(t.begin(), t.end());
+    auto mean = 0ul;
+    std::uint64_t medianCounter = 0;
+    std::uint64_t percentile25 = 0;
+    std::uint64_t percentile50 = 0;
+    std::uint64_t percentile75 = 0;
     for (std::size_t j = 0; j < t.size(); ++j) {
         if (t[j] == 0ul) {
             auto k = j;
@@ -300,25 +305,37 @@ void printHistogram(T&& t) {
         std::ostringstream tmp;
         tmp << "(" << t[j] << ")";
         std::cout << std::setw(2) << j << ": " << std::setw(3) << static_cast<size_t>(t[j] * 100.0 / totalCallCounter)
-                  << "% " << std::setw(std::to_string(*maxCallCounter).size() + 2) << tmp.str() << " ";
+                  << "% " << std::setw(std::to_string(maxCallCounter).size() + 2) << tmp.str() << " ";
         for (std::size_t k = 0; k <
-             static_cast<size_t>(1.0 * t[j] * (termSize - std::to_string(*maxCallCounter).size()) / totalCallCounter);
+             static_cast<size_t>(1.0 * t[j] * (termSize - std::to_string(maxCallCounter).size()) / totalCallCounter);
              ++k) {
             std::cout << "=";
         }
         std::cout << "\n";
+        mean += j * t[j];
+        medianCounter += t[j];
+        if (percentile25 == 0 && medianCounter > totalCallCounter / 4) {
+            percentile25 = j;
+        }
+        if (percentile50 == 0 && medianCounter > totalCallCounter / 2) {
+            percentile50 = j;
+        }
+        if (percentile75 == 0 && medianCounter > totalCallCounter / 4 * 3) {
+            percentile75 = j;
+        }
     }
+    mean /= totalCallCounter;
+    std::cout << "mean: " << mean << ", 25th/50th/75th percentile: " << percentile25 << "/" << percentile50 << "/"
+              << percentile75 << "\n";
 }
 
-[[noreturn]] void signal_handler(int signal [[maybe_unused]]) {
+[[noreturn]] void signal_handler(int signal[[maybe_unused]]) {
     std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
     // std::cout << functionCallCounter[0][1] << " objects, function calls:\n";
     /*for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
         printHistogram(functionCallCounter[i]);
         std::cout << "\n";
-    }
-    printHistogram(moveCounter1);
-    printHistogram(moveCounter2);*/
+    }*/
     printHistogram(statistics);
     exit(0);
 }
