@@ -3,8 +3,8 @@ import os
 mainEnv = Environment(
     CC="clang",
     CXX="clang++",
-    CXXFLAGS="-std=c++2a -stdlib=libc++ -Wall -Wextra -O3 -g -mtune=native -march=native -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
-    LINKFLAGS="-stdlib=libc++")
+    CXXFLAGS="-std=c++2a -stdlib=libc++ -flto -Wall -Wextra -O3 -g -mtune=native -march=native -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
+    LINKFLAGS="-stdlib=libc++ -flto")
 mainEnv['ENV']['TERM'] = os.environ['TERM']
 
 testEnv = Environment(
