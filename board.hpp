@@ -472,7 +472,7 @@ constexpr void Board<amIWhite>::forEachKingMove(F&& func) const {
                 if (castling[1] && (figures[OwnRook] & castling2RookStart) == castling2RookStart &&
                     (figures[None] & castling2Fields) == castling2Fields &&
                     !isThreatened(currentPos | castling2RookTarget | castling2Target)) {
-                    checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
+                    checkedMove<WW, 1>(currentPos, OwnKing, OwnKing, func);
                 }
             }
         }
@@ -486,7 +486,7 @@ constexpr void Board<amIWhite>::forEachKingMove(F&& func) const {
                 if (castling[3] && (figures[OwnRook] & castling4RookStart) == castling4RookStart &&
                     (figures[None] & castling4Fields) == castling4Fields &&
                     !isThreatened(currentPos | castling4RookTarget | castling4Target)) {
-                    checkedMove<WWW, 1>(currentPos, OwnKing, OwnKing, func);
+                    checkedMove<WW, 1>(currentPos, OwnKing, OwnKing, func);
                 }
             }
         }

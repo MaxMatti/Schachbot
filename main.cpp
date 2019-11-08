@@ -13,7 +13,7 @@
 static std::chrono::steady_clock::time_point totalStart;
 static std::int64_t totalMoves;
 
-[[noreturn]] void signal_handler(int signal[[maybe_unused]]);
+[[noreturn]] void signal_handler(int signal [[maybe_unused]]);
 
 template <bool amIWhite>
 Move createMove(const Board<amIWhite>& currentSituation, std::string input) {
@@ -121,7 +121,7 @@ Move getMove(Bot& bot, Board<amIWhite>& board) {
     return chosenMove;
 }
 
-int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
+int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     std::signal(SIGINT, signal_handler);
     std::signal(SIGABRT, signal_handler);
     std::string initBoard =
@@ -172,39 +172,7 @@ int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
         else {
             chosenMove = getInputMove(currentSituation);
         }*/
-        chosenMove = getMove<4, false>(currentBot, currentSituation);
-        /*if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<6, false>(currentBot, currentSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<8, false>(currentBot, currentSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<10, false>(currentBot, currentSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<12, false>(currentBot, currentSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<14, false>(currentBot, currentSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<16, false>(currentBot, currentSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<18, false>(currentBot, currentSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<20, false>(currentBot, currentSituation);
-        }*/
+        chosenMove = getMove<6, false>(currentBot, currentSituation);
         std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms out of " << currentBot.counter
                   << " moves (" << currentBot.counter / (getMsSince(start) + 1) << "/ms).\n";
         decltype(otherSituation) tmp1 = std::move(otherSituation);
@@ -222,38 +190,6 @@ int main(int argc[[maybe_unused]], char const* argv[[maybe_unused]][]) {
         totalMoves += currentBot.counter;
         currentBot.counter = 0;
         chosenMove = getMove<4, false>(currentBot, otherSituation);
-        /*if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<6, false>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<8, false>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<10, false>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<12, false>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<14, false>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<16, false>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<18, false>(currentBot, otherSituation);
-        }
-        if (std::chrono::steady_clock::now() - start < timeThreshold) {
-            std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms." << std::endl;
-            chosenMove = getMove<20, false>(currentBot, otherSituation);
-        }*/
         std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms out of " << currentBot.counter
                   << " moves (" << currentBot.counter / (getMsSince(start) + 1) << "/ms).\n";
         decltype(currentSituation) tmp2 = std::move(currentSituation);
@@ -329,8 +265,9 @@ void printHistogram(T&& t) {
               << percentile75 << "\n";
 }
 
-[[noreturn]] void signal_handler(int signal[[maybe_unused]]) {
-    std::cout << "Evaluated " << totalMoves << " Moves (" << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
+[[noreturn]] void signal_handler(int signal [[maybe_unused]]) {
+    std::cout << "Evaluated " << totalMoves << " Moves in " << getMsSince(totalStart) << " ms ("
+              << totalMoves / (getMsSince(totalStart) + 1) << "/ms).\n";
     // std::cout << functionCallCounter[0][1] << " objects, function calls:\n";
     /*for (std::size_t i = 0; i < functionCallCounter.size(); ++i) {
         printHistogram(functionCallCounter[i]);

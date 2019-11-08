@@ -26,10 +26,10 @@ constexpr std::size_t arraySize() {
 using time_point = std::chrono::steady_clock::time_point;
 using duration = std::chrono::steady_clock::duration;
 
-static std::array<size_t, 64> moveCounter{
+/*static std::array<size_t, 64> moveCounter{
     0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul,
     0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul,
-    0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul};
+    0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul, 0ul};*/
 
 std::string printDuration(duration time);
 std::string printDurationSince(time_point start);
@@ -75,7 +75,7 @@ Move Bot::getMove(BoardWrapper board) {
 
 template <std::size_t depth, bool loud, bool amIWhite>
 Move Bot::getMove(Board<amIWhite> board) {
-    auto start[[maybe_unused]] = std::chrono::steady_clock::now();
+    auto start [[maybe_unused]] = std::chrono::steady_clock::now();
     Move bestMove = board.getFirstValidMove();
     // This number needs to be converted between positive and negative without any loss, thus the formula.
     int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
@@ -96,7 +96,7 @@ Move Bot::getMove(Board<amIWhite> board) {
 
 template <std::size_t depth, bool amIWhite>
 int Bot::getScore(
-    Board<amIWhite> board, int bestPreviousScore[[maybe_unused]], int worstPreviousScore[[maybe_unused]]) {
+    Board<amIWhite> board, int bestPreviousScore [[maybe_unused]], int worstPreviousScore [[maybe_unused]]) {
     if constexpr (depth == 0) {
         ++counter;
     }
@@ -131,9 +131,10 @@ int Bot::getScore(
         situations.reserve(64ul);
         // this number needs to be within the range set by getMove for bestScore.
         int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()) + 1};
+        int bestPossibleScore{std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
         int shallowScore = getScore<0>(board, bestPreviousScore, worstPreviousScore);
         board.forEachValidMove([&](const Move& move) { situations.push_back({move, board.applyMove(move), 0, 0}); });
-        ++moveCounter[std::min(situations.size(), 64ul)];
+        //++moveCounter[std::min(situations.size(), 64ul)];
         for (auto& it : situations) {
             std::get<2>(it) = -getScore<0>(std::get<1>(it), -worstPreviousScore, -bestPreviousScore);
         }
@@ -144,14 +145,13 @@ int Bot::getScore(
                     return std::get<2>(a) > std::get<2>(b);
                 });
             if constexpr (depth > 3) {
-                for (auto it = situations.begin(); it < situations.begin() + pruningCounter; ++it) {
+                for (auto it = situations.begin(); it < situations.end(); ++it) {
                     if (std::get<1>(*it).isThreatened(std::get<1>(*it).figures[board.OwnKing])) {
-                        std::get<2>(*it) = -bestScore;
+                        std::get<2>(*it) = -bestPossibleScore;
                     }
-                    int doubleMovePruningScore =
-                        getScore<depth % 2 + 2>(std::get<1>(*it), bestPreviousScore, worstPreviousScore);
+                    int doubleMovePruningScore = getScore<0>(std::get<1>(*it), bestPreviousScore, worstPreviousScore);
                     if (doubleMovePruningScore < shallowScore * 2 + 100) {
-                        std::get<2>(*it) = -bestScore;
+                        std::get<2>(*it) = -bestPossibleScore / 2;
                     }
                 }
                 std::partial_sort(
