@@ -154,3 +154,21 @@ std::ostream& operator<<(std::ostream& stream, const Tournament& tournament) {
     }
     return stream;
 }
+
+void Tournament::prepareNextRound(
+    const float& mutationIntensity,
+    std::mt19937& generator,
+    const std::size_t winners,
+    const std::size_t generationSize) {
+
+    std::partial_sort(contestants.begin(), contestants.begin() + winners, contestants.end(), [](auto x, auto y) {
+        return x.second > y.second; // note: this is reversed because we want descending order
+    });
+    contestants.resize(generationSize);
+    for (auto i = 0ul; i < winners; ++i) {
+        contestants[i].second = 0;
+    }
+    for (auto i = winners; i < generationSize; ++i) {
+        contestants[i] = std::pair(Bot(contestants[i % winners].first, mutationIntensity, generator), 0);
+    }
+}

@@ -43,9 +43,16 @@ struct Bot {
     std::array<int, 16> strengths;
     std::array<int, 16> weaknesses;
     Bot();
-    Bot(std::array<int, 16> new_values)
-        : values(new_values) {}
+    Bot(std::array<int, 16> newValues, std::array<int, 16> newStrengths, std::array<int, 16> newWeaknesses)
+        : values(newValues)
+        , strengths(newStrengths)
+        , weaknesses(newWeaknesses) {}
     Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator);
+
+    Bot(const Bot&) = default;
+    Bot(Bot&&) = default;
+    Bot& operator=(const Bot&) = default;
+    Bot& operator=(Bot&&) = default;
 
     template <std::size_t depth, bool loud>
     Move getMove(BoardWrapper board);

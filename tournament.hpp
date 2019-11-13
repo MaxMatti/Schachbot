@@ -28,6 +28,11 @@ public:
     Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator);
     bool addContestant(Bot&& newContestant);
     void evaluate(const bool loud);
+    void prepareNextRound(
+        const float& mutationIntensity,
+        std::mt19937& generator,
+        const std::size_t winners,
+        const std::size_t generationSize);
 
     friend std::ostream& operator<<(std::ostream& stream, const Tournament& tournament);
 };
