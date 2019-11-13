@@ -49,10 +49,26 @@ struct Bot {
         , weaknesses(newWeaknesses) {}
     Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator);
 
-    Bot(const Bot&) = default;
-    Bot(Bot&&) = default;
-    Bot& operator=(const Bot&) = default;
-    Bot& operator=(Bot&&) = default;
+    Bot(const Bot& other)
+        : values(other.values)
+        , strengths(other.strengths)
+        , weaknesses(other.weaknesses) {}
+    Bot(Bot&& other)
+        : values(std::move(other.values))
+        , strengths(std::move(other.strengths))
+        , weaknesses(std::move(other.weaknesses)) {}
+    Bot& operator=(const Bot& other) {
+        values = other.values;
+        strengths = other.strengths;
+        weaknesses = other.weaknesses;
+        return *this;
+    }
+    Bot& operator=(Bot&& other) {
+        values = std::move(other.values);
+        strengths = std::move(other.strengths);
+        weaknesses = std::move(other.weaknesses);
+        return *this;
+    }
 
     template <std::size_t depth, bool loud>
     Move getMove(BoardWrapper board);

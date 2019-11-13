@@ -74,7 +74,9 @@ Bot::Bot() {
 }
 
 Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator)
-    : values(previous.values) {
+    : values(previous.values)
+    , strengths(previous.strengths)
+    , weaknesses(previous.weaknesses) {
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
     for (auto& i : values) {
         if (distribution(generator) < mutationIntensity) {
@@ -104,19 +106,59 @@ Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& gene
 
 std::ostream& operator<<(std::ostream& stream, const Bot& bot) {
     stream << "Bot(";
-    for (std::size_t i = 0; i < bot.values.size(); ++i) {
-        if (getChessSymbol(static_cast<piece>(i)) != std::string{"x"}) {
-            stream << static_cast<piece>(i) << ": " << bot.values[i] << ", ";
-        }
+    for (piece i : {WhiteKing,
+                    WhiteQueen,
+                    WhiteRook,
+                    WhiteBishop,
+                    WhiteKnight,
+                    WhitePawn,
+                    BlackKing,
+                    BlackQueen,
+                    BlackRook,
+                    BlackBishop,
+                    BlackKnight,
+                    BlackPawn}) {
+        stream << i << bot.values[i];
+    }
+    stream << "/";
+    for (piece i : {WhiteKing,
+                    WhiteQueen,
+                    WhiteRook,
+                    WhiteBishop,
+                    WhiteKnight,
+                    WhitePawn,
+                    BlackKing,
+                    BlackQueen,
+                    BlackRook,
+                    BlackBishop,
+                    BlackKnight,
+                    BlackPawn}) {
+        stream << i << bot.strengths[i];
+    }
+    stream << "/";
+    for (piece i : {WhiteKing,
+                    WhiteQueen,
+                    WhiteRook,
+                    WhiteBishop,
+                    WhiteKnight,
+                    WhitePawn,
+                    BlackKing,
+                    BlackQueen,
+                    BlackRook,
+                    BlackBishop,
+                    BlackKnight,
+                    BlackPawn}) {
+        stream << i << bot.weaknesses[i];
     }
     stream << ")";
     return stream;
 }
 
 bool operator<(const Bot& bot1, const Bot& bot2) {
-    return bot1.values < bot2.values || (bot1.values == bot2.values && bot1.strengths < bot2.strengths);
+    return bot1.values < bot2.values || (bot1.values == bot2.values && bot1.strengths < bot2.strengths) ||
+        (bot1.values == bot2.values && bot1.strengths == bot2.strengths && bot1.weaknesses < bot2.weaknesses);
 }
 
 bool operator==(const Bot& bot1, const Bot& bot2) {
-    return bot1.values == bot2.values && bot1.strengths == bot2.strengths;
+    return bot1.values == bot2.values && bot1.strengths == bot2.strengths && bot1.weaknesses == bot2.weaknesses;
 }
