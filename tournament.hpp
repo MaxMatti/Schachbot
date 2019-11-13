@@ -28,6 +28,7 @@ public:
     Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator);
     bool addContestant(const Bot& newContestant);
     bool addContestant(Bot&& newContestant);
+    size_t size() const { return contestants.size(); }
     void evaluate(const bool loud);
     void prepareNextRound(
         const float& mutationIntensity,
