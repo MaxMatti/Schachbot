@@ -26,6 +26,7 @@ public:
     Tournament(std::vector<std::pair<Bot, int>> contestants)
         : contestants(contestants) {}
     Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator);
+    bool addContestant(const Bot& newContestant);
     bool addContestant(Bot&& newContestant);
     void evaluate(const bool loud);
     void prepareNextRound(

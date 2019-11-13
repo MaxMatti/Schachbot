@@ -18,6 +18,16 @@ Tournament::Tournament(const Tournament& previous, const float& mutationIntensit
     }
 }
 
+bool Tournament::addContestant(const Bot& newContestant) {
+    if (std::find_if(this->contestants.begin(), this->contestants.end(), [&](auto a) {
+            return std::get<0>(a) == newContestant;
+        }) != this->contestants.end()) {
+        return false;
+    }
+    this->contestants.emplace_back(newContestant, 0);
+    return true;
+}
+
 bool Tournament::addContestant(Bot&& newContestant) {
     if (std::find_if(this->contestants.begin(), this->contestants.end(), [&](auto a) {
             return std::get<0>(a) == newContestant;
