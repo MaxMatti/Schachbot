@@ -136,6 +136,9 @@ int Bot::getScore(
         board.forEachValidMove([&](const Move& move) { situations.push_back({move, board.applyMove(move), 0, 0}); });
         //++moveCounter[std::min(situations.size(), 64ul)];
         for (auto& it : situations) {
+            if (std::get<1>(it).figures[board.EnemyKing] == 0ul) {
+                return bestPossibleScore;
+            }
             std::get<2>(it) = -getScore<0>(std::get<1>(it), -worstPreviousScore, -bestPreviousScore);
         }
         constexpr const static size_t pruningCounter = 10;

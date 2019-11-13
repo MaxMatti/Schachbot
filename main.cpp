@@ -172,7 +172,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         else {
             chosenMove = getInputMove(currentSituation);
         }*/
-        chosenMove = getMove<6, false>(currentBot, currentSituation);
+        chosenMove = getMove<4, false>(currentBot, currentSituation);
         std::cout << "Chose " << chosenMove << " in " << getMsSince(start) << " ms out of " << currentBot.counter
                   << " moves (" << currentBot.counter / (getMsSince(start) + 1) << "/ms).\n";
         decltype(otherSituation) tmp1 = std::move(otherSituation);

@@ -1,6 +1,7 @@
 #include "tournament.hpp"
 #include <algorithm>
 #include <iostream>
+#include <map>
 #include <thread>
 
 Tournament::Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator)
@@ -35,7 +36,7 @@ void Tournament::evaluate(const bool loud) {
             if (it != jt) {
                 // Might introduce situations where only one thread is active when that game takes longer than the later
                 // ones however a proper solution would take too long to implement.Might even remove this at some point.
-                if (games.size() >= std::thread::hardware_concurrency() - 1) {
+                /*if (games.size() >= std::thread::hardware_concurrency() - 1) {
                     games.begin()->join();
                     games.pop_front();
                     if (loud) {
@@ -44,26 +45,95 @@ void Tournament::evaluate(const bool loud) {
                     results.pop_front();
                 }
                 results.push_back(notPlayed);
-                games.emplace_back(&Tournament::playGame<true>, this, it, jt, results.rbegin());
+                games.emplace_back(&Tournament::playGame<true>, this, it, jt, results.rbegin());*/
                 // For single-threaded testing:
-                // this->playGame<true>(it, jt, results.rbegin());
+                results.push_back(notPlayed);
+                this->playGame(it, jt, results.rbegin());
             }
             else {
-                games.emplace_back([]() {});
+                // games.emplace_back([]() {});
                 results.push_back(notPlayed);
             }
         }
-        games.emplace_back([]() {});
+        // games.emplace_back([]() {});
         results.push_back(lineBreak);
     }
-    while (!games.empty()) {
+    /*while (!games.empty()) {
         games.begin()->join();
         games.pop_front();
         if (loud) {
             std::cout << results.front();
         }
         results.pop_front();
+    }*/
+    if (loud) {
+        for (const auto& it : results) {
+            std::cout << it;
+        }
     }
+}
+
+void Tournament::playGame(
+    std::vector<std::pair<Bot, int>>::iterator bot1,
+    std::vector<std::pair<Bot, int>>::iterator bot2,
+    std::list<outcome>::reverse_iterator result) {
+    std::string initBoard =
+        "rnbqkbnr"
+        "pppppppp"
+        "        "
+        "        "
+        "        "
+        "        "
+        "PPPPPPPP"
+        "RNBQKBNR";
+    Board<true> currentSituation(initBoard);
+    Board<false> reverseSituation;
+    Move whiteMove;
+    Move blackMove;
+    std::map<Board<true>, std::size_t> currentBoardCounter;
+    std::map<Board<false>, std::size_t> reverseBoardCounter;
+
+    while (true) {
+        if (reverseSituation.isThreatened(reverseSituation.figures[BlackKing])) {
+            bot1->second += 3;
+            *result = whiteWon;
+            return;
+        }
+        if (currentSituation.getFirstValidMove() == Move{} || currentBoardCounter[currentSituation] > 10) {
+            bot1->second += 1;
+            bot2->second += 1;
+            *result = draw;
+            return;
+        }
+        whiteMove = bot1->first.getMove<4, false>(currentSituation);
+        reverseSituation = currentSituation.applyMove(whiteMove);
+        ++reverseBoardCounter[reverseSituation];
+        if (currentSituation.figures[BlackKing] == 0ul) {
+            bot1->second += 3;
+            *result = whiteWon;
+            return;
+        }
+        if (currentSituation.isThreatened(currentSituation.figures[WhiteKing])) {
+            bot2->second += 3;
+            *result = blackWon;
+            return;
+        }
+        if (reverseSituation.getFirstValidMove() == Move{} || reverseBoardCounter[reverseSituation] > 10) {
+            bot1->second += 1;
+            bot2->second += 1;
+            *result = draw;
+            return;
+        }
+        blackMove = bot2->first.getMove<4, false>(reverseSituation);
+        currentSituation = reverseSituation.applyMove(blackMove);
+        ++currentBoardCounter[currentSituation];
+        if (currentSituation.figures[WhiteKing] == 0ul) {
+            bot2->second += 3;
+            *result = blackWon;
+            return;
+        }
+    }
+    __builtin_unreachable();
 }
 
 std::ostream& operator<<(std::ostream& stream, const outcome& result) {

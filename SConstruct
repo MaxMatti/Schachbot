@@ -26,8 +26,9 @@ testEnv = Environment(
 testEnv['ENV']['TERM'] = os.environ['TERM']
 
 #testEnv.Program(target="gtest", source=["board.test.cpp", "move.test.cpp"])
-#mainEnv.Program(target="main", source=["main.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
-fastEnv.Program(target="main-uni", source=["main.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
-#mainEnv.Program(target="getBotMove", source=["getBotMove.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
-#mainEnv.Program(target="getBot1Move", source=["getBot1Move.cpp", "bot1.cpp", "move.cpp", "piece.cpp"])
-#mainEnv.Program(target="getBot2Move", source=["getBot2Move.cpp", "bot2.cpp", "move.cpp", "piece.cpp"])
+mainEnv.Program(target="main", source=["main.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
+mainEnv.Program(target="playTournament", source=["playTournament.cpp", "tournament.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
+#fastEnv.Program(target="main-uni", source=["main.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
+mainEnv.Program(target="getBotMove", source=["getBotMove.cpp", "bot.cpp", "move.cpp", "piece.cpp"])
+mainEnv.Program(target="getBot1Move", source=["getBot1Move.cpp", "bot1.cpp", "move.cpp", "piece.cpp"])
+mainEnv.Program(target="getBot2Move", source=["getBot2Move.cpp", "bot2.cpp", "move.cpp", "piece.cpp"])

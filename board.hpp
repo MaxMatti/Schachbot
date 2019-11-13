@@ -106,10 +106,15 @@ struct Board {
 };
 
 template <bool amIWhite1, bool amIWhite2>
-bool operator<(const Board<amIWhite1>& board1, const Board<amIWhite2>& board2);
+bool operator<(const Board<amIWhite1>& board1, const Board<amIWhite2>& board2) {
+    return board1.figures < board2.figures || (board1.figures == board2.figures && board1.castling < board2.castling) ||
+        (board1.figures == board2.figures && board1.castling == board2.castling && board1.enPassent < board2.enPassent);
+}
+
 template <bool amIWhite>
 bool operator==(const Board<amIWhite>& board1, const Board<amIWhite>& board2) {
-    return board1.figures == board2.figures && board1.castling == board2.castling;
+    return board1.figures == board2.figures && board1.castling == board2.castling &&
+        board1.enPassent == board2.enPassent;
 }
 constexpr std::uint64_t getDirectionSize(const std::uint64_t pos, const char direction);
 
