@@ -79,26 +79,26 @@ Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& gene
     , weaknesses(previous.weaknesses) {
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
     for (auto& i : values) {
-        if (distribution(generator) < mutationIntensity) {
+        while (distribution(generator) < mutationIntensity) {
             i += 1;
         }
-        else if (distribution(generator) < mutationIntensity) {
+        while (distribution(generator) < mutationIntensity) {
             i -= 1;
         }
     }
     for (auto& i : strengths) {
-        if (distribution(generator) < mutationIntensity) {
+        while (distribution(generator) < mutationIntensity) {
             i += 1;
         }
-        else if (distribution(generator) < mutationIntensity) {
+        while (distribution(generator) < mutationIntensity) {
             i -= 1;
         }
     }
     for (auto& i : weaknesses) {
-        if (distribution(generator) < mutationIntensity) {
+        while (distribution(generator) < mutationIntensity) {
             i += 1;
         }
-        else if (distribution(generator) < mutationIntensity) {
+        while (distribution(generator) < mutationIntensity) {
             i -= 1;
         }
     }

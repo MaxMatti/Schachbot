@@ -8,16 +8,17 @@
 
 int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     Bot parent;
+    float mutationIntensity = 0.2f;
     std::mt19937 engine;
     Tournament tournament;
     tournament.addContestant(parent);
-    tournament.addContestant(Bot(parent, 0.1f, engine));
-    tournament.addContestant(Bot(parent, 0.1f, engine));
-    tournament.addContestant(Bot(parent, 0.1f, engine));
-    tournament.addContestant(Bot(parent, 0.1f, engine));
-    tournament.addContestant(Bot(parent, 0.1f, engine));
-    tournament.addContestant(Bot(parent, 0.1f, engine));
-    tournament.addContestant(Bot(parent, 0.1f, engine));
+    tournament.addContestant(Bot(parent, mutationIntensity, engine));
+    tournament.addContestant(Bot(parent, mutationIntensity, engine));
+    tournament.addContestant(Bot(parent, mutationIntensity, engine));
+    tournament.addContestant(Bot(parent, mutationIntensity, engine));
+    tournament.addContestant(Bot(parent, mutationIntensity, engine));
+    tournament.addContestant(Bot(parent, mutationIntensity, engine));
+    tournament.addContestant(Bot(parent, mutationIntensity, engine));
     std::size_t tournamentLength = 100;
     if (argc > 1) {
         tournamentLength = std::stoll(argv[1], 0, 0);
@@ -25,10 +26,10 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     for (std::size_t i = 0; i < tournamentLength; ++i) {
         tournament.evaluate(true);
         std::cout << tournament;
-        tournament.prepareNextRound(0.1f, engine, 4, 7);
+        tournament.prepareNextRound(mutationIntensity, engine, 4, 7);
         tournament.addContestant(parent);
         while (tournament.size() < 8) {
-            tournament.addContestant(Bot(parent, 0.1f, engine));
+            tournament.addContestant(Bot(parent, mutationIntensity, engine));
         }
     }
     return 0;
