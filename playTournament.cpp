@@ -8,7 +8,7 @@
 
 int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     Bot parent;
-    float mutationIntensity = 0.2f;
+    float mutationIntensity = 0.4f;
     std::mt19937 engine;
     Tournament tournament;
     tournament.addContestant(parent);

@@ -31,7 +31,7 @@ Bot::Bot() {
     values[WhiteBishop] = 3;
     values[WhiteKnight] = 3;
     values[WhitePawn] = 1;
-    values[WhiteFigure] = 1000;
+    values[WhiteFigure] = 100000;
     values[BlackKing] = -values[WhiteKing];
     values[BlackQueen] = -values[WhiteQueen];
     values[BlackRook] = -values[WhiteRook];
