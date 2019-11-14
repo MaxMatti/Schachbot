@@ -50,12 +50,14 @@ constexpr char getChessChar(piece type) {
     case BlackBishop: return 'b';
     case BlackKnight: return 'n';
     case BlackPawn: return 'p';
+    case BlackFigure: return 'f';
     case WhiteKing: return 'K';
     case WhiteQueen: return 'Q';
     case WhiteRook: return 'R';
     case WhiteBishop: return 'B';
     case WhiteKnight: return 'N';
     case WhitePawn: return 'P';
+    case WhiteFigure: return 'F';
     default: return 'x';
     }
 }

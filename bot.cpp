@@ -25,7 +25,7 @@ std::string printDurationSince(time_point start) { return printDuration(std::chr
 Bot::Bot() {
     values[None] = 0;
     values[AnyFigure] = 0;
-    values[WhiteKing] = 1000;
+    values[WhiteKing] = 100000;
     values[WhiteQueen] = 9;
     values[WhiteRook] = 5;
     values[WhiteBishop] = 3;
@@ -57,7 +57,7 @@ Bot::Bot() {
     strengths[BlackFigure] = strengths[WhiteFigure];
     weaknesses[None] = 0;
     weaknesses[AnyFigure] = 0;
-    weaknesses[WhiteKing] = 1000;
+    weaknesses[WhiteKing] = 100000;
     weaknesses[WhiteQueen] = 9;
     weaknesses[WhiteRook] = 5;
     weaknesses[WhiteBishop] = 3;
@@ -112,12 +112,14 @@ std::ostream& operator<<(std::ostream& stream, const Bot& bot) {
                     WhiteBishop,
                     WhiteKnight,
                     WhitePawn,
+                    WhiteFigure,
                     BlackKing,
                     BlackQueen,
                     BlackRook,
                     BlackBishop,
                     BlackKnight,
-                    BlackPawn}) {
+                    BlackPawn,
+                    BlackFigure}) {
         stream << i << bot.values[i];
     }
     stream << "/";
@@ -127,12 +129,14 @@ std::ostream& operator<<(std::ostream& stream, const Bot& bot) {
                     WhiteBishop,
                     WhiteKnight,
                     WhitePawn,
+                    WhiteFigure,
                     BlackKing,
                     BlackQueen,
                     BlackRook,
                     BlackBishop,
                     BlackKnight,
-                    BlackPawn}) {
+                    BlackPawn,
+                    BlackFigure}) {
         stream << i << bot.strengths[i];
     }
     stream << "/";
@@ -142,12 +146,14 @@ std::ostream& operator<<(std::ostream& stream, const Bot& bot) {
                     WhiteBishop,
                     WhiteKnight,
                     WhitePawn,
+                    WhiteFigure,
                     BlackKing,
                     BlackQueen,
                     BlackRook,
                     BlackBishop,
                     BlackKnight,
-                    BlackPawn}) {
+                    BlackPawn,
+                    BlackFigure}) {
         stream << i << bot.weaknesses[i];
     }
     stream << ")";
