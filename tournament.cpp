@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <random>
 #include <thread>
 
 Tournament::Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator)
@@ -170,7 +171,7 @@ std::ostream& operator<<(std::ostream& stream, const outcome& result) {
     case whiteWon: stream << '<'; break;
     case blackWon: stream << '>'; break;
     case draw: stream << '.'; break;
-    case lineBreak: stream << '\n'; break;
+    case lineBreak: stream << std::endl; break;
     }
     return stream;
 }
