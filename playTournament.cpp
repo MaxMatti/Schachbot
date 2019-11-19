@@ -31,7 +31,8 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     for (std::size_t i = 0; i < tournamentLength; ++i) {
         startTime = std::chrono::steady_clock::now();
         tournament.evaluate(true);
-        std::cout << tournament << "(evaluated in " << getSecondsSince(startTime) << "s)\n";
+        std::cout << tournament << "(tournament #" << (i + 1) << " evaluated in " << getSecondsSince(startTime)
+                  << "s)\n";
         tournament.prepareNextRound(mutationIntensity, engine, 4, 7);
         tournament.addContestant(parent);
         while (tournament.size() < 8) {
