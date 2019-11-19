@@ -147,7 +147,12 @@ int Bot::getScore(
             result += strengths[move.turnFrom] * strengths[board.EnemyFigure];
             result -= weaknesses[board.figureAt(move.moveTo)] * weaknesses[board.OwnFigure];
         });
-        return result;
+        if constexpr (amIWhite) {
+            return result;
+        }
+        else {
+            return -result;
+        }
     }
     else {
         std::vector<std::tuple<Move, Board<amIWhite>, int, int>> situations;
