@@ -134,7 +134,13 @@ void Tournament::playGame(
             *result = draw;
             return;
         }
-        whiteMove = bot1->first.getMove<4, false>(currentSituation);
+        if (whiteMoveCache.count(bot1->first) && whiteMoveCache.at(bot1->first).count(currentSituation)) {
+            whiteMove = whiteMoveCache.at(bot1->first).at(currentSituation);
+        }
+        else {
+            whiteMove = bot1->first.getMove<4, false>(currentSituation);
+            whiteMoveCache[bot1->first][currentSituation] = whiteMove;
+        }
         reverseSituation = currentSituation.applyMove(whiteMove);
         ++reverseBoardCounter[reverseSituation];
         if (currentSituation.figures[BlackKing] == 0ul) {
@@ -153,7 +159,13 @@ void Tournament::playGame(
             *result = draw;
             return;
         }
-        blackMove = bot2->first.getMove<4, false>(reverseSituation);
+        if (blackMoveCache.count(bot2->first) && blackMoveCache.at(bot2->first).count(reverseSituation)) {
+            blackMove = blackMoveCache.at(bot2->first).at(reverseSituation);
+        }
+        else {
+            blackMove = bot2->first.getMove<4, false>(reverseSituation);
+            blackMoveCache[bot2->first][reverseSituation] = blackMove;
+        }
         currentSituation = reverseSituation.applyMove(blackMove);
         ++currentBoardCounter[currentSituation];
         if (currentSituation.figures[WhiteKing] == 0ul) {
@@ -169,13 +181,111 @@ void Tournament::saveTournament(std::ofstream& out) const {
     auto vecSize = contestants.size();
     out.write(reinterpret_cast<const char*>(&vecSize), sizeof(vecSize));
     out.write(reinterpret_cast<const char*>(contestants.data()), sizeof(*contestants.data()) * vecSize);
+    out.write("====", 4);
+    vecSize = whiteMoveCache.size();
+    out.write(reinterpret_cast<const char*>(&vecSize), sizeof(vecSize));
+    for (auto& it : whiteMoveCache) {
+        out.write(reinterpret_cast<const char*>(&it.first), sizeof(it.first));
+        auto subVecSize = it.second.size();
+        out.write(reinterpret_cast<const char*>(&subVecSize), sizeof(subVecSize));
+        for (auto& jt : it.second) {
+            out.write(reinterpret_cast<const char*>(&jt.first), sizeof(jt.first));
+            out.write(reinterpret_cast<const char*>(&jt.second), sizeof(jt.second));
+        }
+    }
+    out.write("====", 4);
+    vecSize = blackMoveCache.size();
+    out.write(reinterpret_cast<const char*>(&vecSize), sizeof(vecSize));
+    for (auto& it : blackMoveCache) {
+        out.write(reinterpret_cast<const char*>(&it.first), sizeof(it.first));
+        auto subVecSize = it.second.size();
+        out.write(reinterpret_cast<const char*>(&subVecSize), sizeof(subVecSize));
+        for (auto& jt : it.second) {
+            out.write(reinterpret_cast<const char*>(&jt.first), sizeof(jt.first));
+            out.write(reinterpret_cast<const char*>(&jt.second), sizeof(jt.second));
+        }
+    }
+    out.write("====", 4);
 }
 
 void Tournament::loadTournament(std::ifstream& in) {
+    // TODO(mstaff): error handling
     auto vecSize = contestants.size();
     in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
     contestants.resize(vecSize);
     in.read(reinterpret_cast<char*>(contestants.data()), sizeof(*contestants.data()) * vecSize);
+    std::string divider = "0000";
+    in.read(divider.data(), 4);
+    if (divider != "====") {
+        whiteMoveCache.clear();
+        blackMoveCache.clear();
+        return;
+    }
+    vecSize = whiteMoveCache.size();
+    in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
+    for (decltype(vecSize) i = 0; i < vecSize; ++i) {
+        decltype(vecSize) subVecSize;
+        Bot currentBot;
+        in.read(reinterpret_cast<char*>(&currentBot), sizeof(currentBot));
+        in.read(reinterpret_cast<char*>(&subVecSize), sizeof(subVecSize));
+        for (decltype(subVecSize) j = 0; j < subVecSize; ++j) {
+            Board<true> currentBoard;
+            Move currentMove;
+            in.read(reinterpret_cast<char*>(&currentBoard), sizeof(currentBoard));
+            in.read(reinterpret_cast<char*>(&currentMove), sizeof(currentMove));
+            whiteMoveCache[currentBot][currentBoard] = currentMove;
+        }
+    }
+    in.read(divider.data(), 4);
+    if (divider != "====") {
+        whiteMoveCache.clear();
+        blackMoveCache.clear();
+        return;
+    }
+    vecSize = blackMoveCache.size();
+    in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
+    for (decltype(vecSize) i = 0; i < vecSize; ++i) {
+        decltype(vecSize) subVecSize;
+        Bot currentBot;
+        in.read(reinterpret_cast<char*>(&currentBot), sizeof(currentBot));
+        in.read(reinterpret_cast<char*>(&subVecSize), sizeof(subVecSize));
+        for (decltype(subVecSize) j = 0; j < subVecSize; ++j) {
+            Board<true> currentBoard;
+            Move currentMove;
+            in.read(reinterpret_cast<char*>(&currentBoard), sizeof(currentBoard));
+            in.read(reinterpret_cast<char*>(&currentMove), sizeof(currentMove));
+            blackMoveCache[currentBot][currentBoard] = currentMove;
+        }
+    }
+    in.read(divider.data(), 4);
+    if (divider != "====") {
+        whiteMoveCache.clear();
+        blackMoveCache.clear();
+        return;
+    }
+}
+
+std::string Tournament::extraInfo() const {
+    std::ostringstream tmp;
+    tmp << std::accumulate(
+               whiteMoveCache.begin(),
+               whiteMoveCache.end(),
+               0ul,
+               [](const auto& sum, const auto& cacheLine) { return sum + cacheLine.second.size(); })
+        << " white moves cached for " << whiteMoveCache.size() << " moves:\n";
+    for (auto& it : whiteMoveCache) {
+        tmp << it.first << " - " << it.second.size() << "\n";
+    }
+    tmp << std::accumulate(
+               blackMoveCache.begin(),
+               blackMoveCache.end(),
+               0ul,
+               [](const auto& sum, const auto& cacheLine) { return sum + cacheLine.second.size(); })
+        << " black moves cached for " << blackMoveCache.size() << " moves:\n";
+    for (auto& it : blackMoveCache) {
+        tmp << it.first << " - " << it.second.size() << "\n";
+    }
+    return tmp.str();
 }
 
 std::ostream& operator<<(std::ostream& stream, const outcome& result) {

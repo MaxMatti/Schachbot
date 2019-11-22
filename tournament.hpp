@@ -17,7 +17,8 @@ enum outcome {
 class Tournament {
 private:
     std::vector<std::pair<Bot, int>> contestants;
-    // std::map<Bot, std::map<BoardWrapper, Move>> moveCache;
+    std::map<Bot, std::map<Board<true>, Move>> whiteMoveCache;
+    std::map<Bot, std::map<Board<false>, Move>> blackMoveCache;
 
     void playGame(
         std::vector<std::pair<Bot, int>>::iterator bot1,
@@ -39,6 +40,7 @@ public:
         std::mt19937& generator,
         const std::size_t winners,
         const std::size_t generationSize);
+    std::string extraInfo() const;
 
     void saveTournament(std::ofstream& out) const;
     void loadTournament(std::ifstream& in);

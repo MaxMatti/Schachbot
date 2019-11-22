@@ -2,28 +2,23 @@
 #include "bot.hpp"
 #include "move.hpp"
 #include "tournament.hpp"
-#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
-
-[[noreturn]] void signal_handler(int signal [[maybe_unused]]);
-Tournament tournament;
-std::string filename = "/tmp/chess.bin";
 
 inline auto getSecondsSince(time_point start) {
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start).count();
 }
 
 int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
-    std::signal(SIGINT, signal_handler);
-    std::signal(SIGABRT, signal_handler);
     Bot parent;
+    Tournament tournament;
     float mutationIntensity = 0.4f;
     std::mt19937 engine;
     std::size_t tournamentSize = 7;
     std::size_t tournamentLength = 100;
+    std::string filename = "/tmp/chess.bin";
     if (argc > 1) {
         if (argc > 2) {
             if (argc > 3) {
@@ -37,6 +32,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     if (savefile.good()) {
         tournament.loadTournament(savefile);
         std::cout << tournament;
+        std::cout << tournament.extraInfo();
     }
     else {
         tournament.prepareNextRound(mutationIntensity, engine, 0, 0);
@@ -51,25 +47,16 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     for (std::size_t i = 0; i < tournamentLength; ++i) {
         startTime = std::chrono::steady_clock::now();
         tournament.evaluate(true);
-        std::cout << tournament << "(tournament #" << (i + 1) << " evaluated in " << getSecondsSince(startTime)
-                  << "s)\n";
+        std::cout << "Tournament #" << (i + 1) << ": evaluated in " << getSecondsSince(startTime) << "s.\nSaving "
+                  << tournament;
+        std::ofstream savefile(filename.c_str(), std::ios_base::binary);
+        tournament.saveTournament(savefile);
+        savefile.close();
         tournament.prepareNextRound(mutationIntensity, engine, (tournamentSize - 1) / 2, tournamentSize - 1);
         tournament.addContestant(parent);
         while (tournament.size() < tournamentSize) {
             tournament.addContestant(Bot(parent, mutationIntensity, engine));
         }
     }
-    signal_handler(0);
     return 0;
-}
-
-[[noreturn]] void signal_handler(int signal [[maybe_unused]]) {
-    if (signal != 0) {
-        std::cout << "\n";
-    }
-    std::cout << "Saving " << tournament;
-    std::ofstream savefile(filename.c_str(), std::ios_base::binary);
-    tournament.saveTournament(savefile);
-    savefile.close();
-    exit(0);
 }
