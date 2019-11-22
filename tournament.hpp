@@ -1,6 +1,8 @@
 #pragma once
 
 #include "bot.hpp"
+#include <cstddef>
+#include <fstream>
 #include <list>
 #include <vector>
 
@@ -15,6 +17,7 @@ enum outcome {
 class Tournament {
 private:
     std::vector<std::pair<Bot, int>> contestants;
+    // std::map<Bot, std::map<BoardWrapper, Move>> moveCache;
 
     void playGame(
         std::vector<std::pair<Bot, int>>::iterator bot1,
@@ -26,6 +29,7 @@ public:
     Tournament(std::vector<std::pair<Bot, int>> contestants)
         : contestants(contestants) {}
     Tournament(const Tournament& previous, const float& mutationIntensity, std::mt19937& generator);
+    Tournament(std::ifstream in) { loadTournament(in); }
     bool addContestant(const Bot& newContestant);
     bool addContestant(Bot&& newContestant);
     size_t size() const { return contestants.size(); }
@@ -35,6 +39,9 @@ public:
         std::mt19937& generator,
         const std::size_t winners,
         const std::size_t generationSize);
+
+    void saveTournament(std::ofstream& out) const;
+    void loadTournament(std::ifstream& in);
 
     friend std::ostream& operator<<(std::ostream& stream, const Tournament& tournament);
 };

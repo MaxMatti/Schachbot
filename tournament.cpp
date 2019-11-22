@@ -165,6 +165,19 @@ void Tournament::playGame(
     __builtin_unreachable();
 }
 
+void Tournament::saveTournament(std::ofstream& out) const {
+    auto vecSize = contestants.size();
+    out.write(reinterpret_cast<const char*>(&vecSize), sizeof(vecSize));
+    out.write(reinterpret_cast<const char*>(contestants.data()), sizeof(*contestants.data()) * vecSize);
+}
+
+void Tournament::loadTournament(std::ifstream& in) {
+    auto vecSize = contestants.size();
+    in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
+    contestants.resize(vecSize);
+    in.read(reinterpret_cast<char*>(contestants.data()), sizeof(*contestants.data()) * vecSize);
+}
+
 std::ostream& operator<<(std::ostream& stream, const outcome& result) {
     switch (result) {
     case notPlayed: stream << '-'; break;
