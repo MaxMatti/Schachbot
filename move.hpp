@@ -3,7 +3,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <iostream>
 #include <sstream>
 #include <utility>
 
@@ -150,6 +149,12 @@ constexpr bool contains(Direction haystack, Direction needle) { return haystack 
 constexpr bool containsTwice(Direction haystack, Direction needle) { return haystack & (needle << 1); }
 
 namespace hidden {
+
+template <class T>
+constexpr T abs(T val) {
+    return val < 0 ? -val : val;
+}
+
 constexpr std::uint64_t maskNone() { return -1ul; }
 
 template <std::uint8_t distance>
@@ -268,20 +273,38 @@ constexpr bool uncheckedMove(std::uint64_t pos) {
     return pos;
 }
 
+template <int shiftAmount, class T>
+constexpr T leftShift(T val) {
+    if constexpr (shiftAmount < 0) {
+        return val >> -shiftAmount;
+    }
+    else {
+        return val << shiftAmount;
+    }
+}
+
 // TODO(mstaff): Can this be written down more elegantly? Also needs to be tested.
-template <Direction dir, int distance>
-constexpr bool isInDirection(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+template <Direction dir, int currentDistance, int totalDistance>
+constexpr bool isInDirectionHelper(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
     constexpr auto direction = getIntDir(dir);
-    for (auto i = 1; i < distance + 1 && abs(direction * i) < 64; ++i) {
-        auto pos = direction < 0 ? (from >> (-direction * i)) : (from << (direction * i));
-        if (pos & obstacles) {
+    if constexpr (abs(direction * currentDistance) < 64) {
+        auto pos = leftShift<direction * currentDistance>(from);
+        if (pos & obstacles || !(pos & getMask<dir, currentDistance>())) {
             return false;
         }
         if (pos & to) {
             return true;
         }
+        if constexpr (currentDistance < totalDistance) {
+            return isInDirectionHelper<dir, currentDistance + 1, totalDistance>(from, to, obstacles);
+        }
     }
     return false;
+}
+
+template <Direction dir, int distance>
+constexpr bool isInDirection(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
+    return isInDirectionHelper<dir, 1, distance>(from, to, obstacles);
 }
 } // namespace hidden
 
@@ -330,13 +353,19 @@ constexpr bool forEachPos(std::uint64_t positions, F&& func) {
     return true;
 }
 
+template <bool amIWhite>
 constexpr bool isCastling(std::uint64_t from, std::uint64_t to) {
-    return ((from & whiteKingStartPos) == whiteKingStartPos &&
-            ((to & castling1Target) == castling1Target || (to & castling2Target) == castling2Target)) ||
-        ((from & blackKingStartPos) == blackKingStartPos &&
-         ((to & castling3Target) == castling3Target || (to & castling4Target) == castling4Target));
+    if constexpr (amIWhite) {
+        return (from & whiteKingStartPos) == whiteKingStartPos &&
+            ((to & castling1Target) == castling1Target || (to & castling2Target) == castling2Target);
+    }
+    else {
+        return (from & blackKingStartPos) == blackKingStartPos &&
+            ((to & castling3Target) == castling3Target || (to & castling4Target) == castling4Target);
+    }
 }
 
+template <bool amIWhite>
 constexpr bool isValidKingMove(std::uint64_t from, std::uint64_t to) {
     bool result = false;
     result |= hidden::isInDirection<N, 1>(from, to, 0ul);
@@ -347,7 +376,7 @@ constexpr bool isValidKingMove(std::uint64_t from, std::uint64_t to) {
     result |= hidden::isInDirection<SE, 1>(from, to, 0ul);
     result |= hidden::isInDirection<SW, 1>(from, to, 0ul);
     result |= hidden::isInDirection<NW, 1>(from, to, 0ul);
-    return result || isCastling(from, to);
+    return result || isCastling<amIWhite>(from, to);
 }
 
 constexpr bool isValidQueenMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
@@ -442,7 +471,12 @@ constexpr bool isValidPawnMove(std::uint64_t from, std::uint64_t to, std::uint64
 template <piece fig>
 constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles, std::uint64_t enPassent) {
     if constexpr (isKing(fig)) {
-        return isValidKingMove(from, to);
+        if constexpr (fig == WhiteKing) {
+            return isValidKingMove<true>(from, to);
+        }
+        else if constexpr (fig == BlackKing) {
+            return isValidKingMove<false>(from, to);
+        }
     }
     else if constexpr (isQueen(fig)) {
         return isValidQueenMove(from, to, obstacles);
@@ -458,10 +492,10 @@ constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t o
     }
     else if constexpr (isPawn(fig)) {
         if constexpr (fig == WhitePawn) {
-            return isValidPawnMove<true>(from, to, obstacles, enPassent);
+            return isValidPawnMove<true>(from, to, obstacles | to, enPassent);
         }
         else if constexpr (fig == BlackPawn) {
-            return isValidPawnMove<false>(from, to, obstacles, enPassent);
+            return isValidPawnMove<false>(from, to, obstacles | to, enPassent);
         }
     }
     assert(false && "Cannot test validity of moves for this type of piece!");

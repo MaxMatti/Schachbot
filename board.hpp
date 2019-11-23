@@ -736,6 +736,14 @@ constexpr bool Board<amIWhite>::isThreatenedByFigure(std::uint64_t positions) co
 
 template <bool amIWhite>
 constexpr bool Board<amIWhite>::isThreatened(std::uint64_t positions) const {
+    /*auto tmp1 = isThreatenedByFigure<EnemyRook>(positions);
+    auto tmp2 = isThreatenedByFigure<EnemyBishop>(positions);
+    auto tmp3 = isThreatenedByFigure<EnemyQueen>(positions);
+    auto tmp4 = isThreatenedByFigure<EnemyKnight>(positions);
+    auto tmp5 = isThreatenedByFigure<EnemyPawn>(positions);
+    auto tmp6 = isThreatenedByFigure<EnemyKing>(positions);
+    std::cout << "----" << tmp1 << tmp2 << tmp3 << tmp4 << tmp5 << tmp6 << "\n";
+    return tmp1 | tmp2 | tmp3 | tmp4 | tmp5 | tmp6;*/
     return isThreatenedByFigure<EnemyRook>(positions) | isThreatenedByFigure<EnemyBishop>(positions) |
         isThreatenedByFigure<EnemyQueen>(positions) | isThreatenedByFigure<EnemyKnight>(positions) |
         isThreatenedByFigure<EnemyPawn>(positions) | isThreatenedByFigure<EnemyKing>(positions);

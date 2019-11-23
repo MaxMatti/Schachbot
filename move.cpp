@@ -22,7 +22,12 @@ std::ostream& operator<<(std::ostream& stream, const Move& move) {
 
 bool isValidMove(Move move, std::uint64_t obstacles, std::uint64_t enPassent) {
     if (isKing(move.turnFrom)) {
-        return isValidKingMove(move.moveFrom, move.moveTo);
+        if (move.turnFrom == WhiteKing) {
+            return isValidKingMove<true>(move.moveFrom, move.moveTo);
+        }
+        else if (move.turnFrom == BlackKing) {
+            return isValidKingMove<false>(move.moveFrom, move.moveTo);
+        }
     }
     else if (isQueen(move.turnFrom)) {
         return isValidQueenMove(move.moveFrom, move.moveTo, obstacles);
