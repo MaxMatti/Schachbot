@@ -102,6 +102,12 @@ struct Move {
 
 std::ostream& operator<<(std::ostream& stream, const Move& move);
 
+constexpr bool operator<(const Move& l, const Move& r) {
+    return l.moveFrom < r.moveFrom || (l.moveFrom == r.moveFrom && l.moveTo < r.moveTo) ||
+        (l.moveFrom == r.moveFrom && l.moveTo == r.moveTo && l.turnFrom < r.turnFrom) ||
+        (l.moveFrom == r.moveFrom && l.moveTo == r.moveTo && l.turnFrom == r.turnFrom && l.turnTo < r.turnTo);
+}
+
 constexpr bool operator!=(const Move& l, const Move& r) {
     return l.moveFrom != r.moveFrom || l.moveTo != r.moveTo || l.turnFrom != r.turnFrom || l.turnTo != r.turnTo;
 }

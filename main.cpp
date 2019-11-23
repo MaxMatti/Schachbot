@@ -1,6 +1,4 @@
-#include "board.hpp"
 #include "bot.hpp"
-#include "move.hpp"
 #include <chrono>
 #include <cmath>
 #include <csignal>

@@ -1,6 +1,3 @@
-#include "board.hpp"
-#include "bot.hpp"
-#include "move.hpp"
 #include "tournament.hpp"
 #include <fstream>
 #include <iostream>

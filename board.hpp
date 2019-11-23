@@ -387,15 +387,6 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
                     result.figures[WhiteFigure] |= castling1RookTarget;
                 }
                 if (move.moveTo == castling2Target) {
-                    if (!castling[1]) {
-                        std::cout << "====1\n" << *this;
-                    }
-                    else if ((figures[WhiteRook] & castling2RookStart) != castling2RookStart) {
-                        std::cout << "====2\n" << *this;
-                    }
-                    else if ((figures[None] & castling2Fields) != castling2Fields) {
-                        std::cout << "====3\n" << *this;
-                    }
                     assert(
                         castling[1] && (figures[WhiteRook] & castling2RookStart) == castling2RookStart &&
                         (figures[None] & castling2Fields) == castling2Fields && "Castling is blocked!");
@@ -409,24 +400,24 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
             result.castling[1] = false;
         }
         else if (move.turnFrom == BlackKing) {
-            if (move.turnTo == blackKingStartPos) {
+            if (move.moveFrom == blackKingStartPos) {
                 if (move.moveTo == castling3Target) {
                     assert(
-                        castling[2] && (figures[WhiteRook] & castling3RookStart) == castling3RookStart &&
+                        castling[2] && (figures[BlackRook] & castling3RookStart) == castling3RookStart &&
                         (figures[None] & castling3Fields) == castling3Fields && "Castling is blocked!");
-                    result.figures[WhiteRook] &= ~castling3RookStart;
-                    result.figures[WhiteRook] |= castling3RookTarget;
-                    result.figures[WhiteFigure] &= ~castling3RookStart;
-                    result.figures[WhiteFigure] |= castling3RookTarget;
+                    result.figures[BlackRook] &= ~castling3RookStart;
+                    result.figures[BlackRook] |= castling3RookTarget;
+                    result.figures[BlackFigure] &= ~castling3RookStart;
+                    result.figures[BlackFigure] |= castling3RookTarget;
                 }
                 if (move.moveTo == castling4Target) {
                     assert(
-                        castling[3] && (figures[WhiteRook] & castling4RookStart) == castling4RookStart &&
+                        castling[3] && (figures[BlackRook] & castling4RookStart) == castling4RookStart &&
                         (figures[None] & castling4Fields) == castling4Fields && "Castling is blocked!");
-                    result.figures[WhiteRook] &= ~castling4RookStart;
-                    result.figures[WhiteRook] |= castling4RookTarget;
-                    result.figures[WhiteFigure] &= ~castling4RookStart;
-                    result.figures[WhiteFigure] |= castling4RookTarget;
+                    result.figures[BlackRook] &= ~castling4RookStart;
+                    result.figures[BlackRook] |= castling4RookTarget;
+                    result.figures[BlackFigure] &= ~castling4RookStart;
+                    result.figures[BlackFigure] |= castling4RookTarget;
                 }
             }
             result.castling[2] = false;

@@ -12,3 +12,8 @@ struct BoardWrapper {
         , blackBoard(board)
         , amIWhite(hasBeenWhite) {}
 };
+
+bool operator<(const BoardWrapper& board1, const BoardWrapper& board2);
+bool operator==(const BoardWrapper& board1, const BoardWrapper& board2);
+
+std::ostream& operator<<(std::ostream& stream, const BoardWrapper& board);
