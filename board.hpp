@@ -80,6 +80,7 @@ struct Board {
     piece figureAt(std::uint64_t pos) const;
 
     std::string print() const;
+    std::string store() const;
 
     template <class F>
     constexpr void forEachKingMove(F&& func) const;
@@ -103,6 +104,7 @@ struct Board {
     constexpr bool isThreatenedByFigure(std::uint64_t positions) const;
 
     constexpr bool isThreatened(std::uint64_t positions) const;
+    constexpr bool isThreatenedDebugVariant(std::uint64_t positions) const;
 };
 
 template <bool amIWhite1, bool amIWhite2>
@@ -320,7 +322,8 @@ Board<amIWhite> Board<amIWhite>::applyMove(Move move) const {
     assert(isCacheCoherent());
     Board<amIWhite> result{*this};
     result.enPassent = 0ul;
-    auto tmp = isValidMove(move) && ::isValidMove(move, figures[AnyFigure], enPassent);
+    auto tmp = isValidMove(move) &&
+        ::isValidMove(move, figures[AnyFigure], castling[0], castling[1], castling[2], castling[3], enPassent);
     if (!tmp) {
         std::cout << "Trying to apply invalid move:\n" << *this << move << std::endl;
     }
@@ -661,6 +664,66 @@ std::string Board<amIWhite>::print() const {
 }
 
 template <bool amIWhite>
+std::string Board<amIWhite>::store() const {
+    std::ostringstream tmp;
+    for (auto i = 0; i < 64; ++i) {
+        if (figures[WhiteKing] & (1ul << i)) {
+            tmp << "K";
+        }
+        else if (figures[WhiteQueen] & (1ul << i)) {
+            tmp << "Q";
+        }
+        else if (figures[WhiteRook] & (1ul << i)) {
+            tmp << "R";
+        }
+        else if (figures[WhiteBishop] & (1ul << i)) {
+            tmp << "B";
+        }
+        else if (figures[WhiteKnight] & (1ul << i)) {
+            tmp << "N";
+        }
+        else if (figures[WhitePawn] & (1ul << i)) {
+            tmp << "P";
+        }
+        else if (figures[BlackKing] & (1ul << i)) {
+            tmp << "k";
+        }
+        else if (figures[BlackQueen] & (1ul << i)) {
+            tmp << "q";
+        }
+        else if (figures[BlackRook] & (1ul << i)) {
+            tmp << "r";
+        }
+        else if (figures[BlackBishop] & (1ul << i)) {
+            tmp << "b";
+        }
+        else if (figures[BlackKnight] & (1ul << i)) {
+            tmp << "n";
+        }
+        else if (figures[BlackPawn] & (1ul << i)) {
+            tmp << "p";
+        }
+        else {
+            int counter = 0;
+            while ((figures[None] & (1ul << i)) && i < 64) {
+                if (i % 8 == 0 && counter > 0) {
+                    tmp << counter << "/";
+                    counter = 0;
+                }
+                ++counter;
+                ++i;
+            }
+            --i;
+            tmp << counter;
+        }
+        if (i % 8 == 7) {
+            tmp << "/";
+        }
+    }
+    return tmp.str().substr(0, tmp.str().size() - 1);
+}
+
+template <bool amIWhite>
 std::ostream& operator<<(std::ostream& stream, const Board<amIWhite>& board) {
     stream << board.print();
     return stream;
@@ -742,7 +805,8 @@ template <piece fig>
 constexpr bool Board<amIWhite>::isThreatenedByFigure(std::uint64_t positions) const {
     return !forEachPos(figures[fig], [&](std::uint64_t from) {
         // TODO(mstaff): function naming
-        return !::isValidMove<fig>(from, positions, figures[AnyFigure], enPassent);
+        return !::isValidMove<fig>(
+            from, positions, figures[AnyFigure], castling[0], castling[1], castling[2], castling[3], enPassent);
     });
 }
 
@@ -759,4 +823,17 @@ constexpr bool Board<amIWhite>::isThreatened(std::uint64_t positions) const {
     return isThreatenedByFigure<EnemyRook>(positions) | isThreatenedByFigure<EnemyBishop>(positions) |
         isThreatenedByFigure<EnemyQueen>(positions) | isThreatenedByFigure<EnemyKnight>(positions) |
         isThreatenedByFigure<EnemyPawn>(positions) | isThreatenedByFigure<EnemyKing>(positions);
+}
+
+template <bool amIWhite>
+constexpr bool Board<amIWhite>::isThreatenedDebugVariant(std::uint64_t positions) const {
+    auto tmp1 = isThreatenedByFigure<EnemyRook>(positions);
+    auto tmp2 = isThreatenedByFigure<EnemyBishop>(positions);
+    auto tmp3 = isThreatenedByFigure<EnemyQueen>(positions);
+    auto tmp4 = isThreatenedByFigure<EnemyKnight>(positions);
+    auto tmp5 = isThreatenedByFigure<EnemyPawn>(positions);
+    auto tmp6 = isThreatenedByFigure<EnemyKing>(positions);
+    std::cout << (tmp1 | tmp2 | tmp3 | tmp4 | tmp5 | tmp6 ? "[" : "(") << tmp1 << tmp2 << tmp3 << tmp4 << tmp5 << tmp6
+              << (tmp1 | tmp2 | tmp3 | tmp4 | tmp5 | tmp6 ? "] " : ") ");
+    return tmp1 | tmp2 | tmp3 | tmp4 | tmp5 | tmp6;
 }

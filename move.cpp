@@ -2,6 +2,14 @@
 
 #include <sstream>
 
+Move::Move(std::string movestr) {
+    assert(movestr.length() == 6);
+    moveFrom = 1ul << ((movestr[1] - 'a') + 8 * ('8' - movestr[2]));
+    moveTo = 1ul << ((movestr[3] - 'a') + 8 * ('8' - movestr[4]));
+    turnFrom = getPiece(movestr[0]);
+    turnTo = getPiece(movestr[5]);
+}
+
 std::ostream& operator<<(std::ostream& stream, const Move& move) {
     std::ostringstream tmp;
     tmp << move.turnFrom;
@@ -13,20 +21,23 @@ std::ostream& operator<<(std::ostream& stream, const Move& move) {
     stream << tmp.str();
     return stream;
 }
-/*
-std::ostream& operator<<(std::ostream& stream, const Move& move) {
-        stream << (char) ('a' + __builtin_ctzll(move.moveFrom) % 8) << 8 - __builtin_ctzll(move.moveFrom) / 8 << "-" <<
-(char) ('a' + __builtin_ctzll(move.moveTo) % 8) << 8 - __builtin_ctzll(move.moveTo) / 8; return stream;
-}
-*/
 
-bool isValidMove(Move move, std::uint64_t obstacles, std::uint64_t enPassent) {
+bool isValidMove(
+    Move move,
+    std::uint64_t obstacles,
+    bool castling1Enabled,
+    bool castling2Enabled,
+    bool castling3Enabled,
+    bool castling4Enabled,
+    std::uint64_t enPassent) {
     if (isKing(move.turnFrom)) {
         if (move.turnFrom == WhiteKing) {
-            return isValidKingMove<true>(move.moveFrom, move.moveTo);
+            return isValidKingMove<true>(
+                move.moveFrom, move.moveTo, castling1Enabled, castling2Enabled, castling3Enabled, castling4Enabled);
         }
         else if (move.turnFrom == BlackKing) {
-            return isValidKingMove<false>(move.moveFrom, move.moveTo);
+            return isValidKingMove<false>(
+                move.moveFrom, move.moveTo, castling1Enabled, castling2Enabled, castling3Enabled, castling4Enabled);
         }
     }
     else if (isQueen(move.turnFrom)) {

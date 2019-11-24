@@ -97,6 +97,7 @@ struct Move {
             (__builtin_popcountll(moveFrom) == 1 && __builtin_popcountll(moveTo) == 1) ||
             (__builtin_popcountll(moveFrom) == 0 && __builtin_popcountll(moveTo) == 0));
     }
+    Move(std::string movestr);
 };
 
 std::ostream& operator<<(std::ostream& stream, const Move& move);
@@ -354,19 +355,44 @@ constexpr bool forEachPos(std::uint64_t positions, F&& func) {
 }
 
 template <bool amIWhite>
-constexpr bool isCastling(std::uint64_t from, std::uint64_t to) {
+constexpr bool isCastling(
+    std::uint64_t from,
+    std::uint64_t to,
+    bool castling1Enabled,
+    bool castling2Enabled,
+    bool castling3Enabled,
+    bool castling4Enabled) {
     if constexpr (amIWhite) {
-        return (from & whiteKingStartPos) == whiteKingStartPos &&
-            ((to & castling1Target) == castling1Target || (to & castling2Target) == castling2Target);
+        if ((from & whiteKingStartPos) == whiteKingStartPos) {
+            if ((to & castling1Target) == castling1Target) {
+                return castling1Enabled;
+            }
+            else if ((to & castling2Target) == castling2Target) {
+                return castling2Enabled;
+            }
+        }
     }
     else {
-        return (from & blackKingStartPos) == blackKingStartPos &&
-            ((to & castling3Target) == castling3Target || (to & castling4Target) == castling4Target);
+        if ((from & blackKingStartPos) == blackKingStartPos) {
+            if ((to & castling3Target) == castling3Target) {
+                return castling3Enabled;
+            }
+            else if ((to & castling4Target) == castling4Target) {
+                return castling4Enabled;
+            }
+        }
     }
+    return false;
 }
 
 template <bool amIWhite>
-constexpr bool isValidKingMove(std::uint64_t from, std::uint64_t to) {
+constexpr bool isValidKingMove(
+    std::uint64_t from,
+    std::uint64_t to,
+    bool castling1Enabled,
+    bool castling2Enabled,
+    bool castling3Enabled,
+    bool castling4Enabled) {
     bool result = false;
     result |= hidden::isInDirection<N, 1>(from, to, 0ul);
     result |= hidden::isInDirection<E, 1>(from, to, 0ul);
@@ -376,7 +402,8 @@ constexpr bool isValidKingMove(std::uint64_t from, std::uint64_t to) {
     result |= hidden::isInDirection<SE, 1>(from, to, 0ul);
     result |= hidden::isInDirection<SW, 1>(from, to, 0ul);
     result |= hidden::isInDirection<NW, 1>(from, to, 0ul);
-    return result || isCastling<amIWhite>(from, to);
+    return result ||
+        isCastling<amIWhite>(from, to, castling1Enabled, castling2Enabled, castling3Enabled, castling4Enabled);
 }
 
 constexpr bool isValidQueenMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles) {
@@ -469,13 +496,23 @@ constexpr bool isValidPawnMove(std::uint64_t from, std::uint64_t to, std::uint64
 }
 
 template <piece fig>
-constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t obstacles, std::uint64_t enPassent) {
+constexpr bool isValidMove(
+    std::uint64_t from,
+    std::uint64_t to,
+    std::uint64_t obstacles,
+    bool castling1Enabled,
+    bool castling2Enabled,
+    bool castling3Enabled,
+    bool castling4Enabled,
+    std::uint64_t enPassent) {
     if constexpr (isKing(fig)) {
         if constexpr (fig == WhiteKing) {
-            return isValidKingMove<true>(from, to);
+            return isValidKingMove<true>(
+                from, to, castling1Enabled, castling2Enabled, castling3Enabled, castling4Enabled);
         }
         else if constexpr (fig == BlackKing) {
-            return isValidKingMove<false>(from, to);
+            return isValidKingMove<false>(
+                from, to, castling1Enabled, castling2Enabled, castling3Enabled, castling4Enabled);
         }
     }
     else if constexpr (isQueen(fig)) {
@@ -502,4 +539,11 @@ constexpr bool isValidMove(std::uint64_t from, std::uint64_t to, std::uint64_t o
     return false;
 }
 
-bool isValidMove(Move move, std::uint64_t obstacles, std::uint64_t enPassent);
+bool isValidMove(
+    Move move,
+    std::uint64_t obstacles,
+    bool castling1Enabled,
+    bool castling2Enabled,
+    bool castling3Enabled,
+    bool castling4Enabled,
+    std::uint64_t enPassent);

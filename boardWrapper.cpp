@@ -1,5 +1,8 @@
 #include "boardWrapper.hpp"
 
+std::string BoardWrapper::print() const { return amIWhite ? whiteBoard.print() : blackBoard.print(); }
+std::string BoardWrapper::store() const { return amIWhite ? whiteBoard.store() : blackBoard.store(); }
+
 bool operator<(const BoardWrapper& board1, const BoardWrapper& board2) {
     return board1.amIWhite < board2.amIWhite ||
         (board1.amIWhite == board2.amIWhite &&
