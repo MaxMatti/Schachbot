@@ -581,8 +581,20 @@ constexpr void Board<amIWhite>::forEachPawnMove(F&& func) const {
         else {
             checkedMove<moveDirection, 1>(currentPos, OwnPawn, OwnPawn, moveFunc);
         }
-        checkedMove<takeDirection1, 1>(currentPos, OwnPawn, OwnPawn, takeFunc);
-        checkedMove<takeDirection2, 1>(currentPos, OwnPawn, OwnPawn, takeFunc);
+        if (isInitialPawnPosition<!amIWhite>(currentPos)) {
+            checkedMove<takeDirection1, 1>(currentPos, OwnPawn, OwnQueen, takeFunc);
+            checkedMove<takeDirection1, 1>(currentPos, OwnPawn, OwnRook, takeFunc);
+            checkedMove<takeDirection1, 1>(currentPos, OwnPawn, OwnBishop, takeFunc);
+            checkedMove<takeDirection1, 1>(currentPos, OwnPawn, OwnKnight, takeFunc);
+            checkedMove<takeDirection2, 1>(currentPos, OwnPawn, OwnQueen, takeFunc);
+            checkedMove<takeDirection2, 1>(currentPos, OwnPawn, OwnRook, takeFunc);
+            checkedMove<takeDirection2, 1>(currentPos, OwnPawn, OwnBishop, takeFunc);
+            checkedMove<takeDirection2, 1>(currentPos, OwnPawn, OwnKnight, takeFunc);
+        }
+        else {
+            checkedMove<takeDirection1, 1>(currentPos, OwnPawn, OwnPawn, takeFunc);
+            checkedMove<takeDirection2, 1>(currentPos, OwnPawn, OwnPawn, takeFunc);
+        }
         return true;
     });
 }
