@@ -3,6 +3,7 @@
 
 from sys import argv
 from PIL import Image, ImageDraw, ImageFont
+import pyautogui
 
 values = ["values", "strengths", "weaknesses"]
 figures = "KQRBNPFkqrbnpf)"
@@ -92,9 +93,8 @@ def createBezier(coords, curves):
         points.extend(bezier(ts))
     return points
 
-def displayBot(bot):
-    defaultBot = interpretBot("K100000Q9R5B3N3P1F100000k-100000q-9r-5b-3n-3p-1f100000/K1Q9R5B3N3P1F1k-1q-9r-5b-3n-3p-1f1/K100000Q9R5B3N3P1F1k-100000q-9r-5b-3n-3p-1f1")
-    imageSize = (1678, 1023)
+def displayBot(bot, imageSize):
+    defaultBot = interpretBot("K10000Q900R500B300N300P100F10000k-10000q-900r-500b-300n-300p-100f10000/K10Q90R50B30N30P10F10k-10q-90r-50b-30n-30p-10f10/K100000Q90R50B30N30P10F10k-100000q-90r-50b-30n-30p-10f10")
     fontPath = "/usr/share/fonts/ubuntu/Ubuntu-R.ttf"
     antiAliasing = 4
     lineWidth = 1
@@ -205,6 +205,11 @@ def displayBot(bot):
     img.resize(imageSize, resample=Image.BOX).show()
 
 def main():
+    imageSize = (pyautogui.size().width, pyautogui.size().height)
+    if imageSize == (5040, 1050):
+        imageSize = (1678, 1023)
+    elif imageSize == (1366, 768):
+        imageSize = (1362, 724)
     botStrings = argv[1:]
     while True:
         nextBot = input()
@@ -213,7 +218,7 @@ def main():
         botStrings.append(nextBot)
     bots = [interpretBot(bot) for bot in botStrings if interpretBot(bot)]
     for bot in bots:
-        displayBot(bot)
+        displayBot(bot, imageSize)
 
 if __name__ == '__main__':
     main()
