@@ -327,7 +327,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                      blackMoveCache.end(),
                      0ul,
                      [](const auto& sum, const auto& elem) { return sum + elem.second.size(); })
-              << " black moves,." << std::endl;
+              << " black moves." << std::endl;
     std::vector<std::pair<Bot, std::pair<std::size_t, std::size_t>>> contestants;
     std::vector<std::tuple<Board<true>, MoveCache, MoveCache>> situations;
     situations.reserve(startLines + 10 * lineIncrement);
@@ -395,8 +395,10 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
             for (auto& it : contestants) {
                 // "<=" because a value of 0 means this bot has not evaluated situation 0
                 if (it.second.first <= i) {
-                    if (whiteMoveCache.count(it.first) && whiteMoveCache.at(it.first).count(whiteBoard) &&
-                        blackMoveCache.count(it.first) && blackMoveCache.at(it.first).count(blackBoard)) {
+                    if ((whiteMoves.empty() ||
+                         (whiteMoveCache.count(it.first) && whiteMoveCache.at(it.first).count(whiteBoard))) &&
+                        (blackMoves.empty() ||
+                         (blackMoveCache.count(it.first) && blackMoveCache.at(it.first).count(blackBoard)))) {
                         auto whiteMove = whiteMoveCache.at(it.first).at(whiteBoard);
                         if (whiteMoves.count(whiteMove)) {
                             it.second.second += whiteMoves.at(whiteMove);
@@ -432,28 +434,32 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                     }
                 };
 
-                std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
-                          << ", gen: " << std::setw(4) << i << ", white ";
-                cont = contestants.begin();
-                auto whiteBotMoves = getMultipleMoves<4>(currentGen, whiteBoard);
-                for (std::size_t j = 0; j < std::min(currentGen.size(), whiteBotMoves.size()); ++j) {
-                    getNextContestant(currentGen[j]);
-                    if (whiteMoves.count(whiteBotMoves[j])) {
-                        cont->second.second += whiteMoves.at(whiteBotMoves[j]);
+                if (!whiteMoves.empty()) {
+                    std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
+                              << ", gen: " << std::setw(4) << i << ", white ";
+                    cont = contestants.begin();
+                    auto whiteBotMoves = getMultipleMoves<4>(currentGen, whiteBoard);
+                    for (std::size_t j = 0; j < std::min(currentGen.size(), whiteBotMoves.size()); ++j) {
+                        getNextContestant(currentGen[j]);
+                        if (whiteMoves.count(whiteBotMoves[j])) {
+                            cont->second.second += whiteMoves.at(whiteBotMoves[j]);
+                        }
+                        whiteMoveCache[currentGen[j]][whiteBoard] = whiteBotMoves[j];
                     }
-                    whiteMoveCache[currentGen[j]][whiteBoard] = whiteBotMoves[j];
                 }
 
-                std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
-                          << ", gen: " << std::setw(4) << i << ", black ";
-                cont = contestants.begin();
-                auto blackBotMoves = getMultipleMoves<4>(currentGen, blackBoard);
-                for (std::size_t j = 0; j < std::min(currentGen.size(), blackBotMoves.size()); ++j) {
-                    getNextContestant(currentGen[j]);
-                    if (blackMoves.count(blackBotMoves[j])) {
-                        cont->second.second += blackMoves.at(blackBotMoves[j]);
+                if (!blackMoves.empty()) {
+                    std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
+                              << ", gen: " << std::setw(4) << i << ", black ";
+                    cont = contestants.begin();
+                    auto blackBotMoves = getMultipleMoves<4>(currentGen, blackBoard);
+                    for (std::size_t j = 0; j < std::min(currentGen.size(), blackBotMoves.size()); ++j) {
+                        getNextContestant(currentGen[j]);
+                        if (blackMoves.count(blackBotMoves[j])) {
+                            cont->second.second += blackMoves.at(blackBotMoves[j]);
+                        }
+                        blackMoveCache[currentGen[j]][blackBoard] = blackBotMoves[j];
                     }
-                    blackMoveCache[currentGen[j]][blackBoard] = blackBotMoves[j];
                 }
 
                 cont = contestants.begin();
