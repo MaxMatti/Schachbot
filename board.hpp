@@ -168,6 +168,9 @@ Board<amIWhite>::Board(std::string input) {
             input.replace(i, 1, std::string(static_cast<size_t>(input[i] - '0'), ' '));
         }
     }
+    for (auto pos = input.find("/"); pos != std::string::npos; pos = input.find("/", pos)) {
+        input.replace(pos, 1, "");
+    }
     if (input.size() != 64) {
         this->initEmptyField();
         return;

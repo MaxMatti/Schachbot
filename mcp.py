@@ -69,7 +69,7 @@ def main():
     for i in competitors:
         for j in competitors:
             knownBoards = []
-            currentBoard = "rnbqkbnrpppppppp8888PPPPPPPPRNBQKBNR"
+            currentBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
             filename = "board-" + i + "-" + j + ".png"
             if os.path.isfile(filename):
                 continue
@@ -78,14 +78,14 @@ def main():
                 currentMove = subprocess.run(competitors[i] + ["--play-white", currentBoard], stdout=subprocess.PIPE).stdout.decode("utf-8")
                 print(currentMove[:-1])
                 currentBoard = apply(currentBoard, currentMove)
-                #display(currentBoard, filename)
+                display(currentBoard, filename)
                 if not "K" in currentBoard or not "k" in currentBoard or knownBoards.count(currentBoard) > 10:
                     break
                 knownBoards += [currentBoard]
                 currentMove = subprocess.run(competitors[j] + ["--play-black", currentBoard], stdout=subprocess.PIPE).stdout.decode("utf-8")
                 print(currentMove[:-1])
                 currentBoard = apply(currentBoard, currentMove)
-                #display(currentBoard, filename)
+                display(currentBoard, filename)
                 if not "K" in currentBoard or not "k" in currentBoard or knownBoards.count(currentBoard) > 10:
                     break
             if not "K" in currentBoard:

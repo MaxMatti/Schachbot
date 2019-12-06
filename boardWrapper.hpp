@@ -11,6 +11,10 @@ struct BoardWrapper {
         : whiteBoard(board)
         , blackBoard(board)
         , amIWhite(hasBeenWhite) {}
+    BoardWrapper(bool hasBeenWhite, std::string initString)
+        : whiteBoard(initString)
+        , blackBoard(initString)
+        , amIWhite(hasBeenWhite) {}
 
     std::string print() const;
     std::string store() const;
