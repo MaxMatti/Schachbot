@@ -238,8 +238,8 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                     // note: this is reversed because we want descending order
                     return a.second.second > b.second.second;
                 });
+            contestants.resize(winners);
         }
-        contestants.resize(winners);
         contestants.reserve(generationSize);
         while (contestants.size() < winners) {
             contestants.emplace_back(Bot{Bot{}, mutationIntensity, engine}, std::pair{0ul, 0ul});
