@@ -170,8 +170,8 @@ auto calcMaxScore(T&& situations) {
 void printColNumbers(std::size_t generationSize) {
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    std::cout << std::setw(std::to_string(generationSize).size() + 46) << "10";
-    for (std::size_t i = 2; i < (w.ws_col - std::to_string(generationSize).size() - 26) / 10; ++i) {
+    std::cout << std::setw(std::to_string(generationSize).size() * 2 + 47) << "10";
+    for (std::size_t i = 2; i < (w.ws_col - std::to_string(generationSize).size() * 2 - 27) / 10; ++i) {
         std::cout << std::setw(10) << i * 10;
     }
     std::cout << std::endl;
@@ -436,6 +436,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
 
                 if (!whiteMoves.empty()) {
                     std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
+                              << "/" << std::setw(std::to_string(generationSize).size()) << contestants.size()
                               << ", gen: " << std::setw(4) << i << ", white ";
                     cont = contestants.begin();
                     auto whiteBotMoves = getMultipleMoves<4>(currentGen, whiteBoard);
@@ -450,6 +451,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
 
                 if (!blackMoves.empty()) {
                     std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
+                              << "/" << std::setw(std::to_string(generationSize).size()) << contestants.size()
                               << ", gen: " << std::setw(4) << i << ", black ";
                     cont = contestants.begin();
                     auto blackBotMoves = getMultipleMoves<4>(currentGen, blackBoard);
