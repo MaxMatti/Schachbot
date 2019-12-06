@@ -8,14 +8,8 @@ from sys import argv
 from tempfile import mkdtemp
 
 competitors = {
-    "bot1depth4": ["./getBot1Move", "--depth=4"],
-    "bot1depth5": ["./getBot1Move", "--depth=5"],
-    "bot1depth6": ["./getBot1Move", "--depth=6"],
-    "bot2depth4": ["./getBot2Move", "--depth=4"],
-    "bot2depth5": ["./getBot2Move", "--depth=5"],
-    "bot2depth6": ["./getBot2Move", "--depth=6"],
-    "bot2depth7": ["./getBot2Move", "--depth=7"],
-    "bot2depth8": ["./getBot2Move", "--depth=8"],
+    "getBotMove": ["./getBotMove", "--depth=4"],
+    "getPgnMove": ["./getPgnMove", "scoreCacheSorted.txt"],
 }
 
 def interpretBoardString(boardString):
@@ -25,7 +19,7 @@ def interpretBoardString(boardString):
             result += [i]
         elif i.isdigit():
             result += [" "] * int(i)
-        else:
+        elif i != "/":
             print("Unknown Symbol: " + i)
     if len(result) < 64:
         result += [""] * (64 - len(result))
@@ -33,16 +27,33 @@ def interpretBoardString(boardString):
 
 def apply(board, move):
     result = board
-    move = move.lower()
-    startPos = ord(move[1]) - ord("a") + (ord("8") - ord(move[2])) * 8
-    endPos = ord(move[3]) - ord("a") + (ord("8") - ord(move[4])) * 8
+    startPos = ord(move[1].lower()) - ord("a") + (ord("8") - ord(move[2])) * 8
+    endPos = ord(move[3].lower()) - ord("a") + (ord("8") - ord(move[4])) * 8
     for i in [1, 2, 3, 4, 5, 6, 7, 8]:
         result = result.replace(str(i), " " * i)
-    result = result[:endPos] + result[startPos] + result[endPos+1:]
+    result = result.replace("/", "")
+    if result[startPos] == move[0]:
+        if move[5] != move[0] and move[5] != " " and move[5] != "\n":
+            result = result[:endPos] + move[5] + result[endPos+1:]
+        else:
+            result = result[:endPos] + result[startPos] + result[endPos+1:]
+    else:
+        print("Error: \"" + result[startPos] + "\" != \"" + move[0] + "\"")
+        exit(0)
     result = result[:startPos] + " " + result[startPos+1:]
+    result = '/'.join(result[i:i+8] for i in range(0, len(result), 8))
     for i in [8, 7, 6, 5, 4, 3, 2, 1]:
         result = result.replace(" " * i, str(i))
-    return result
+    if move.startswith("ke8g8"):
+        return apply(result, "rh8f8\n")
+    elif move.startswith("ke8c8"):
+        return apply(result, "ra8d8\n")
+    elif move.startswith("Ke1g1"):
+        return apply(result, "Rh1f1\n")
+    elif move.startswith("Ke1c1"):
+        return apply(result, "Ra1d1\n")
+    else:
+        return result
 
 def display(boardString, filename):
     width = 1366
@@ -57,7 +68,7 @@ def display(boardString, filename):
             char = board[i * 8 + j]
             if char != "" and char != " ":
                 if not char in pieces:
-                    pieces[char] = Image.open("pieces/" + char + ".png")
+                    pieces[char] = Image.open("pieces/" + char + ".png").resize((64, 64), resample=Image.BOX)
                 img.paste(pieces[char], (j * 64 + 32, i * 64 + 32), pieces[char].convert("RGBA"))
     img.save(filename)
     width = min(width, img.size[0])
