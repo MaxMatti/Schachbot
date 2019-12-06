@@ -4,7 +4,9 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <sys/ioctl.h>
 #include <tuple>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -131,7 +133,7 @@ std::vector<Move> getMultipleMoves(const std::vector<Bot>& contestants, Board<am
 
     std::size_t moveCounter = 0;
     board.forEachValidMove([&](auto) { ++moveCounter; });
-    std::cout << "moves: " << std::setw(2) << moveCounter << " ";
+    std::cout << "moves: " << std::setw(3) << moveCounter << " ";
 
     board.forEachValidMove([&](auto move) {
         Board<!amIWhite> tmp = board.applyMove(move);
@@ -176,6 +178,16 @@ auto calcMaxScore(T&& situations) {
     });
 }
 
+void printColNumbers(std::size_t generationSize) {
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    std::cout << std::setw(std::to_string(generationSize).size() + 46) << "10";
+    for (std::size_t i = 2; i < (w.ws_col - std::to_string(generationSize).size() - 26) / 10; ++i) {
+        std::cout << std::setw(10) << i * 10;
+    }
+    std::cout << std::endl;
+}
+
 int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     std::string cacheFilename = "/tmp/scoreCache.txt";
     if (argc > 1) {
@@ -202,6 +214,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     }
     maxScore = calcMaxScore(situations);
     while (true) {
+        printColNumbers(generationSize);
         for (const auto& it : contestants) {
             if (knownBots.count(it.first)) {
                 auto& knownPos = knownBots.at(it.first);
@@ -309,6 +322,19 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                          [](const auto& a, const auto& b) { return a.second.second < b.second.second; })
                          ->second.second
                   << "\n";
+        std::cout << "Known Bots: " << knownBots.size() << " (level "
+                  << std::min_element(
+                         knownBots.begin(),
+                         knownBots.end(),
+                         [](const auto& a, const auto& b) { return a.second.first < b.second.first; })
+                         ->second.first
+                  << "-"
+                  << std::max_element(
+                         knownBots.begin(),
+                         knownBots.end(),
+                         [](const auto& a, const auto& b) { return a.second.first < b.second.first; })
+                         ->second.first
+                  << ")\n";
         for (const auto& it : contestants) {
             std::cout << it.first << " -> (" << it.second.first << ", " << it.second.second << ")" << std::endl;
         }
