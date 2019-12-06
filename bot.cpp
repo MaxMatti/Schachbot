@@ -25,13 +25,13 @@ std::string printDurationSince(time_point start) { return printDuration(std::chr
 Bot::Bot() {
     values[None] = 0;
     values[AnyFigure] = 0;
-    values[WhiteKing] = 100000;
-    values[WhiteQueen] = 9;
-    values[WhiteRook] = 5;
-    values[WhiteBishop] = 3;
-    values[WhiteKnight] = 3;
-    values[WhitePawn] = 1;
-    values[WhiteFigure] = 100000;
+    values[WhiteKing] = 10000;
+    values[WhiteQueen] = 900;
+    values[WhiteRook] = 500;
+    values[WhiteBishop] = 300;
+    values[WhiteKnight] = 300;
+    values[WhitePawn] = 100;
+    values[WhiteFigure] = 10000;
     values[BlackKing] = -values[WhiteKing];
     values[BlackQueen] = -values[WhiteQueen];
     values[BlackRook] = -values[WhiteRook];
@@ -41,13 +41,13 @@ Bot::Bot() {
     values[BlackFigure] = values[WhiteFigure];
     strengths[None] = 0;
     strengths[AnyFigure] = 0;
-    strengths[WhiteKing] = 1;
-    strengths[WhiteQueen] = 9;
-    strengths[WhiteRook] = 5;
-    strengths[WhiteBishop] = 3;
-    strengths[WhiteKnight] = 3;
-    strengths[WhitePawn] = 1;
-    strengths[WhiteFigure] = 1;
+    strengths[WhiteKing] = 10;
+    strengths[WhiteQueen] = 90;
+    strengths[WhiteRook] = 50;
+    strengths[WhiteBishop] = 30;
+    strengths[WhiteKnight] = 30;
+    strengths[WhitePawn] = 10;
+    strengths[WhiteFigure] = 10;
     strengths[BlackKing] = -strengths[WhiteKing];
     strengths[BlackQueen] = -strengths[WhiteQueen];
     strengths[BlackRook] = -strengths[WhiteRook];
@@ -58,12 +58,12 @@ Bot::Bot() {
     weaknesses[None] = 0;
     weaknesses[AnyFigure] = 0;
     weaknesses[WhiteKing] = 100000;
-    weaknesses[WhiteQueen] = 9;
-    weaknesses[WhiteRook] = 5;
-    weaknesses[WhiteBishop] = 3;
-    weaknesses[WhiteKnight] = 3;
-    weaknesses[WhitePawn] = 1;
-    weaknesses[WhiteFigure] = 1;
+    weaknesses[WhiteQueen] = 90;
+    weaknesses[WhiteRook] = 50;
+    weaknesses[WhiteBishop] = 30;
+    weaknesses[WhiteKnight] = 30;
+    weaknesses[WhitePawn] = 10;
+    weaknesses[WhiteFigure] = 10;
     weaknesses[BlackKing] = -weaknesses[WhiteKing];
     weaknesses[BlackQueen] = -weaknesses[WhiteQueen];
     weaknesses[BlackRook] = -weaknesses[WhiteRook];
@@ -163,6 +163,10 @@ std::ostream& operator<<(std::ostream& stream, const Bot& bot) {
 bool operator<(const Bot& bot1, const Bot& bot2) {
     return bot1.values < bot2.values || (bot1.values == bot2.values && bot1.strengths < bot2.strengths) ||
         (bot1.values == bot2.values && bot1.strengths == bot2.strengths && bot1.weaknesses < bot2.weaknesses);
+}
+
+bool operator!=(const Bot& bot1, const Bot& bot2) {
+    return bot1.values != bot2.values || bot1.strengths != bot2.strengths || bot1.weaknesses != bot2.weaknesses;
 }
 
 bool operator==(const Bot& bot1, const Bot& bot2) {

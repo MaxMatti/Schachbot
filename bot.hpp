@@ -77,13 +77,20 @@ struct Bot {
     Move getMove(Board<amIWhite> board);
 
     template <std::size_t depth, bool amIWhite>
+    Move getMoveSimple(Board<amIWhite> board);
+
+    template <std::size_t depth, bool amIWhite>
     int getScore(Board<amIWhite> board, int bestPreviousScore, int worstPreviousScore);
+
+    template <std::size_t depth, bool amIWhite>
+    int getScoreSimple(Board<amIWhite> board, int bestPreviousScore, int worstPreviousScore);
 
     std::int64_t counter{0};
 };
 
 std::ostream& operator<<(std::ostream& stream, const Bot& bot);
 bool operator<(const Bot& bot1, const Bot& bot2);
+bool operator!=(const Bot& bot1, const Bot& bot2);
 bool operator==(const Bot& bot1, const Bot& bot2);
 
 template <std::size_t depth, bool loud>
@@ -101,11 +108,11 @@ Move Bot::getMove(Board<amIWhite> board) {
     auto start [[maybe_unused]] = std::chrono::steady_clock::now();
     Move bestMove = board.getFirstValidMove();
     // This number needs to be converted between positive and negative without any loss, thus the formula.
-    int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
+    int bestScore = std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
+    int worstScore = -std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
     board.forEachValidMove([&](auto move) {
         Board<!amIWhite> tmp = board.applyMove(move);
-        int currentScore = -getScore<depth - 1>(
-            tmp, -bestScore, std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()));
+        int currentScore = -getScore<depth - 1>(tmp, -bestScore, -worstScore);
         if (currentScore > bestScore) {
             bestScore = currentScore;
             bestMove = move;
@@ -159,7 +166,7 @@ int Bot::getScore(
         situations.reserve(64ul);
         // this number needs to be within the range set by getMove for bestScore.
         int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()) + 1};
-        int bestPossibleScore{std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
+        int bestPossibleScore{-std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
         int shallowScore = getScore<0>(board, bestPreviousScore, worstPreviousScore);
         board.forEachValidMove([&](const Move& move) { situations.push_back({move, board.applyMove(move), 0, 0}); });
         //++moveCounter[std::min(situations.size(), 64ul)];
@@ -227,5 +234,70 @@ int Bot::getScore(
              }
          });
          return bestScore;*/
+    }
+}
+
+template <std::size_t depth, bool amIWhite>
+Move Bot::getMoveSimple(Board<amIWhite> board) {
+    auto start [[maybe_unused]] = std::chrono::steady_clock::now();
+    Move bestMove = board.getFirstValidMove();
+    // This number needs to be converted between positive and negative without any loss, thus the formula.
+    int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
+    board.forEachValidMove([&](auto move) {
+        Board<!amIWhite> tmp = board.applyMove(move);
+        int currentScore = -getScoreSimple<depth - 1>(
+            tmp, -bestScore, std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()));
+        if (currentScore > bestScore) {
+            bestScore = currentScore;
+            bestMove = move;
+        }
+    });
+    return bestMove;
+}
+
+template <std::size_t depth, bool amIWhite>
+int Bot::getScoreSimple(
+    Board<amIWhite> board, int bestPreviousScore [[maybe_unused]], int worstPreviousScore [[maybe_unused]]) {
+    if (board.figures[board.OwnKing] == 0) {
+        return std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max());
+    }
+    if (board.figures[board.EnemyKing] == 0) {
+        return std::min(-std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+    }
+    if constexpr (depth == 0) {
+        int result{0};
+        static_assert(arraySize<decltype(values)>() >= arraySize<decltype(board.figures)>());
+        for (auto i : {board.OwnQueen, board.OwnRook, board.OwnBishop, board.OwnKnight, board.OwnPawn}) {
+            result += __builtin_popcountll(board.figures[i]) * values[i] * values[board.OwnFigure];
+        }
+        for (auto i : {board.EnemyQueen, board.EnemyRook, board.EnemyBishop, board.EnemyKnight, board.EnemyPawn}) {
+            result += __builtin_popcountll(board.figures[i]) * values[i] * values[board.EnemyFigure];
+        }
+        return result;
+    }
+    else {
+        std::vector<Board<!amIWhite>> situations;
+        situations.reserve(64ul);
+        // this number needs to be within the range set by getMove for bestScore.
+        int bestScore{std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max()) + 1};
+        int bestPossibleScore{-std::max(std::numeric_limits<int>::min(), -std::numeric_limits<int>::max())};
+        board.forEachValidMove([&](const Move& move) { situations.push_back(board.applyMove(move)); });
+        //++moveCounter[std::min(situations.size(), 64ul)];
+        for (auto& it : situations) {
+            if (it.figures[board.EnemyKing] == 0ul) {
+                return bestPossibleScore;
+            }
+        }
+        for (auto& it : situations) { /*
+             // alpha-beta-pruning
+             if (bestScore >= bestPreviousScore) {
+                 break;
+             }*/
+            int currentScore = -getScore<depth - 1>(it, -worstPreviousScore, -bestPreviousScore);
+            if (currentScore > bestScore) {
+                bestScore = currentScore;
+            }
+        }
+        return bestScore;
     }
 }
