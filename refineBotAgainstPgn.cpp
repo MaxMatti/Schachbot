@@ -403,13 +403,18 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                          (whiteMoveCache.count(it.first) && whiteMoveCache.at(it.first).count(whiteBoard))) &&
                         (blackMoves.empty() ||
                          (blackMoveCache.count(it.first) && blackMoveCache.at(it.first).count(blackBoard)))) {
-                        auto whiteMove = whiteMoveCache.at(it.first).at(whiteBoard);
-                        if (whiteMoves.count(whiteMove)) {
-                            it.second.second += whiteMoves.at(whiteMove);
+
+                        if (whiteMoveCache.count(it.first) && whiteMoveCache.at(it.first).count(whiteBoard)) {
+                            auto whiteMove = whiteMoveCache.at(it.first).at(whiteBoard);
+                            if (whiteMoves.count(whiteMove)) {
+                                it.second.second += whiteMoves.at(whiteMove);
+                            }
                         }
-                        auto blackMove = whiteMoveCache.at(it.first).at(blackBoard);
-                        if (blackMoves.count(blackMove)) {
-                            it.second.second += blackMoves.at(blackMove);
+                        if (blackMoveCache.count(it.first) && blackMoveCache.at(it.first).count(blackBoard)) {
+                            auto blackMove = blackMoveCache.at(it.first).at(blackBoard);
+                            if (blackMoves.count(blackMove)) {
+                                it.second.second += blackMoves.at(blackMove);
+                            }
                         }
                     }
                     else {
