@@ -150,17 +150,6 @@ std::vector<Move> getMultipleMoves(const std::vector<Bot>& contestants, Board<am
     return bestMoves;
 }
 
-template <bool amIWhite, class T, class F>
-void evaluateGeneration(
-    Board<amIWhite> board, std::vector<Bot> generation, std::map<Move, T> moveScores, F evaluationFn) {
-    auto moves = getMultipleMoves<4>(generation, board);
-    for (std::size_t j = 0; j < generation.size(); ++j) {
-        if (moveScores.count(moves[j])) {
-            evaluationFn(generation[j], moves[j], moveScores.at(moves[j]));
-        }
-    }
-}
-
 template <class T>
 auto calcMaxScore(T&& situations) {
     return std::accumulate(situations.begin(), situations.end(), 0ul, [](const auto& a, const auto& b) {
@@ -188,14 +177,136 @@ void printColNumbers(std::size_t generationSize) {
     std::cout << std::endl;
 }
 
+void saveCache(
+    std::map<Bot, std::pair<std::size_t, std::size_t>> knownBots,
+    std::map<Bot, std::map<Board<true>, Move>> whiteMoveCache,
+    std::map<Bot, std::map<Board<false>, Move>> blackMoveCache,
+    const std::string& filename) {
+
+    std::ofstream out(filename.c_str(), std::ios_base::binary);
+
+    auto vecSize = knownBots.size();
+    out.write(reinterpret_cast<const char*>(&vecSize), sizeof(vecSize));
+    for (auto& it : knownBots) {
+        out.write(reinterpret_cast<const char*>(&it.first), sizeof(it.first));
+        out.write(reinterpret_cast<const char*>(&it.second), sizeof(it.second));
+    }
+    out.write("====", 4);
+    vecSize = whiteMoveCache.size();
+    out.write(reinterpret_cast<const char*>(&vecSize), sizeof(vecSize));
+    for (auto& it : whiteMoveCache) {
+        out.write(reinterpret_cast<const char*>(&it.first), sizeof(it.first));
+        auto subVecSize = it.second.size();
+        out.write(reinterpret_cast<const char*>(&subVecSize), sizeof(subVecSize));
+        for (auto& jt : it.second) {
+            out.write(reinterpret_cast<const char*>(&jt.first), sizeof(jt.first));
+            out.write(reinterpret_cast<const char*>(&jt.second), sizeof(jt.second));
+        }
+    }
+    out.write("====", 4);
+    vecSize = blackMoveCache.size();
+    out.write(reinterpret_cast<const char*>(&vecSize), sizeof(vecSize));
+    for (auto& it : blackMoveCache) {
+        out.write(reinterpret_cast<const char*>(&it.first), sizeof(it.first));
+        auto subVecSize = it.second.size();
+        out.write(reinterpret_cast<const char*>(&subVecSize), sizeof(subVecSize));
+        for (auto& jt : it.second) {
+            out.write(reinterpret_cast<const char*>(&jt.first), sizeof(jt.first));
+            out.write(reinterpret_cast<const char*>(&jt.second), sizeof(jt.second));
+        }
+    }
+    out.write("====", 4);
+    out.close();
+}
+
+auto loadCache(const std::string& filename) -> std::tuple<
+    std::map<Bot, std::pair<std::size_t, std::size_t>>,
+    std::map<Bot, std::map<Board<true>, Move>>,
+    std::map<Bot, std::map<Board<false>, Move>>> {
+
+    std::ifstream in(filename.c_str(), std::ios_base::binary);
+
+    std::map<Bot, std::pair<std::size_t, std::size_t>> knownBots;
+    std::map<Bot, std::map<Board<true>, Move>> whiteMoveCache;
+    std::map<Bot, std::map<Board<false>, Move>> blackMoveCache;
+    // TODO(mstaff): error handling
+    auto vecSize = knownBots.size();
+    in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
+    for (decltype(vecSize) i = 0; i < vecSize; ++i) {
+        Bot currentBot;
+        std::pair<std::size_t, std::size_t> currentScore;
+        in.read(reinterpret_cast<char*>(&currentBot), sizeof(currentBot));
+        in.read(reinterpret_cast<char*>(&currentScore), sizeof(currentScore));
+        knownBots[currentBot] = currentScore;
+    }
+    std::string divider = "0000";
+    in.read(divider.data(), 4);
+    if (divider != "====") {
+        knownBots.clear();
+        whiteMoveCache.clear();
+        blackMoveCache.clear();
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+    }
+    vecSize = whiteMoveCache.size();
+    in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
+    for (decltype(vecSize) i = 0; i < vecSize; ++i) {
+        decltype(vecSize) subVecSize;
+        Bot currentBot;
+        in.read(reinterpret_cast<char*>(&currentBot), sizeof(currentBot));
+        in.read(reinterpret_cast<char*>(&subVecSize), sizeof(subVecSize));
+        for (decltype(subVecSize) j = 0; j < subVecSize; ++j) {
+            Board<true> currentBoard;
+            Move currentMove;
+            in.read(reinterpret_cast<char*>(&currentBoard), sizeof(currentBoard));
+            in.read(reinterpret_cast<char*>(&currentMove), sizeof(currentMove));
+            whiteMoveCache[currentBot][currentBoard] = currentMove;
+        }
+    }
+    divider = "0000";
+    in.read(divider.data(), 4);
+    if (divider != "====") {
+        whiteMoveCache.clear();
+        blackMoveCache.clear();
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+    }
+    vecSize = blackMoveCache.size();
+    in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
+    for (decltype(vecSize) i = 0; i < vecSize; ++i) {
+        decltype(vecSize) subVecSize;
+        Bot currentBot;
+        in.read(reinterpret_cast<char*>(&currentBot), sizeof(currentBot));
+        in.read(reinterpret_cast<char*>(&subVecSize), sizeof(subVecSize));
+        for (decltype(subVecSize) j = 0; j < subVecSize; ++j) {
+            Board<true> currentBoard;
+            Move currentMove;
+            in.read(reinterpret_cast<char*>(&currentBoard), sizeof(currentBoard));
+            in.read(reinterpret_cast<char*>(&currentMove), sizeof(currentMove));
+            blackMoveCache[currentBot][currentBoard] = currentMove;
+        }
+    }
+    divider = "0000";
+    in.read(divider.data(), 4);
+    if (divider != "====") {
+        whiteMoveCache.clear();
+        blackMoveCache.clear();
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+    }
+    in.close();
+    return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+}
+
 int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
-    std::string cacheFilename = "/tmp/scoreCache.txt";
+    std::string scoreCacheFilename = "/tmp/scoreCache.txt";
+    std::string botCacheFilename = "/tmp/botCache.txt";
     if (argc > 1) {
-        cacheFilename = argv[1];
+        scoreCacheFilename = argv[1];
+    }
+    if (argc > 2) {
+        botCacheFilename = argv[2];
     }
     float mutationIntensity = 0.4f;
     std::mt19937 engine;
-    std::ifstream cacheFile(cacheFilename);
+    std::ifstream cacheFile(scoreCacheFilename);
     std::size_t winners = 10;
     std::size_t generationSize = 40;
     std::size_t startLines = 10;
@@ -203,12 +314,23 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     std::size_t maxScore = 1;
     std::size_t minScore = 0;
     Bot newContestant{};
-    std::map<Bot, std::pair<std::size_t, std::size_t>> knownBots;
+    auto [knownBots, whiteMoveCache, blackMoveCache] = loadCache(botCacheFilename);
+    std::cout << "Loaded " << knownBots.size() << " known bots, "
+              << std::accumulate(
+                     whiteMoveCache.begin(),
+                     whiteMoveCache.end(),
+                     0ul,
+                     [](const auto& sum, const auto& elem) { return sum + elem.second.size(); })
+              << " white moves, "
+              << std::accumulate(
+                     blackMoveCache.begin(),
+                     blackMoveCache.end(),
+                     0ul,
+                     [](const auto& sum, const auto& elem) { return sum + elem.second.size(); })
+              << " black moves,." << std::endl;
     std::vector<std::pair<Bot, std::pair<std::size_t, std::size_t>>> contestants;
     std::vector<std::tuple<Board<true>, MoveCache, MoveCache>> situations;
     situations.reserve(startLines + 10 * lineIncrement);
-    std::map<Bot, std::map<Board<true>, Move>> whiteMoveCache;
-    std::map<Bot, std::map<Board<false>, Move>> blackMoveCache;
     for (std::size_t i = 0; i < startLines && !cacheFile.eof(); ++i) {
         situations.push_back(getCachedMoves(cacheFile));
     }
@@ -226,6 +348,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                 knownBots.insert(it);
             }
         }
+        saveCache(knownBots, whiteMoveCache, blackMoveCache, botCacheFilename);
         contestants.resize(0);
         contestants.reserve(knownBots.size());
         std::copy(knownBots.begin(), knownBots.end(), std::back_inserter(contestants));
@@ -264,15 +387,31 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         std::vector<Bot> currentGen;
         currentGen.reserve(generationSize);
         for (std::size_t i = 0; i < situations.size(); ++i) {
+            const auto& whiteMoves = std::get<1>(situations[i]);
+            const auto& blackMoves = std::get<2>(situations[i]);
+            auto whiteBoard = Board<true>{std::get<0>(situations[i])};
+            auto blackBoard = Board<false>{std::get<0>(situations[i])};
             currentGen.resize(0);
-            for (const auto& it : contestants) {
-                if (it.second.first <= i) { // "<=" because a value of 0 means this bot has not evaluated situation 0
-                    currentGen.push_back(it.first);
+            for (auto& it : contestants) {
+                // "<=" because a value of 0 means this bot has not evaluated situation 0
+                if (it.second.first <= i) {
+                    if (whiteMoveCache.count(it.first) && whiteMoveCache.at(it.first).count(whiteBoard) &&
+                        blackMoveCache.count(it.first) && blackMoveCache.at(it.first).count(blackBoard)) {
+                        auto whiteMove = whiteMoveCache.at(it.first).at(whiteBoard);
+                        if (whiteMoves.count(whiteMove)) {
+                            it.second.second += whiteMoves.at(whiteMove);
+                        }
+                        auto blackMove = whiteMoveCache.at(it.first).at(blackBoard);
+                        if (blackMoves.count(blackMove)) {
+                            it.second.second += blackMoves.at(blackMove);
+                        }
+                    }
+                    else {
+                        currentGen.push_back(it.first);
+                    }
                 }
             }
             if (currentGen.size() > 0) {
-                const auto& whiteMoves = std::get<1>(situations[i]);
-                const auto& blackMoves = std::get<2>(situations[i]);
                 auto cont = contestants.begin();
                 auto getNextContestant = [&](const auto& contestant) {
                     while (cont->first != contestant && cont != contestants.end()) {
@@ -292,22 +431,31 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                         exit(1);
                     }
                 };
-                auto evaluationFn = [&](auto contestant, auto /*move*/, auto score) {
-                    getNextContestant(contestant);
-                    cont->second.second += score;
-                };
-                if (!whiteMoves.empty()) {
-                    std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
-                              << ", gen: " << std::setw(4) << i << ", white ";
-                    cont = contestants.begin();
-                    evaluateGeneration(Board<true>{std::get<0>(situations[i])}, currentGen, whiteMoves, evaluationFn);
+
+                std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
+                          << ", gen: " << std::setw(4) << i << ", white ";
+                cont = contestants.begin();
+                auto whiteBotMoves = getMultipleMoves<4>(currentGen, whiteBoard);
+                for (std::size_t j = 0; j < std::min(currentGen.size(), whiteBotMoves.size()); ++j) {
+                    getNextContestant(currentGen[j]);
+                    if (whiteMoves.count(whiteBotMoves[j])) {
+                        cont->second.second += whiteMoves.at(whiteBotMoves[j]);
+                    }
+                    whiteMoveCache[currentGen[j]][whiteBoard] = whiteBotMoves[j];
                 }
-                if (!blackMoves.empty()) {
-                    std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
-                              << ", gen: " << std::setw(4) << i << ", black ";
-                    cont = contestants.begin();
-                    evaluateGeneration(Board<false>{std::get<0>(situations[i])}, currentGen, blackMoves, evaluationFn);
+
+                std::cout << "Size: " << std::setw(std::to_string(generationSize).size()) << currentGen.size()
+                          << ", gen: " << std::setw(4) << i << ", black ";
+                cont = contestants.begin();
+                auto blackBotMoves = getMultipleMoves<4>(currentGen, blackBoard);
+                for (std::size_t j = 0; j < std::min(currentGen.size(), blackBotMoves.size()); ++j) {
+                    getNextContestant(currentGen[j]);
+                    if (blackMoves.count(blackBotMoves[j])) {
+                        cont->second.second += blackMoves.at(blackBotMoves[j]);
+                    }
+                    blackMoveCache[currentGen[j]][blackBoard] = blackBotMoves[j];
                 }
+
                 cont = contestants.begin();
                 for (const auto& it : currentGen) {
                     getNextContestant(it);
@@ -339,5 +487,6 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
             std::cout << it.first << " -> (" << it.second.first << ", " << it.second.second << ")" << std::endl;
         }
     }
+    cacheFile.close();
     return 0;
 }
