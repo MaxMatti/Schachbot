@@ -479,27 +479,25 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                     cont->second.first = i + 1;
                 }
             }
+            saveCache(knownBots, whiteMoveCache, blackMoveCache, botCacheFilename);
         }
-        std::cout << "MaxScore: " << maxScore << ", old MinScore: " << minScore << ", new MinScore: "
-                  << std::min_element(
-                         contestants.begin(),
-                         contestants.end(),
-                         [](const auto& a, const auto& b) { return a.second.second < b.second.second; })
-                         ->second.second
-                  << ", MutationIntensity: " << mutationIntensity << "\n";
-        std::cout << "Known Bots: " << knownBots.size() << " (level "
-                  << std::min_element(
-                         knownBots.begin(),
-                         knownBots.end(),
-                         [](const auto& a, const auto& b) { return a.second.first < b.second.first; })
-                         ->second.first
-                  << "-"
-                  << std::max_element(
-                         knownBots.begin(),
-                         knownBots.end(),
-                         [](const auto& a, const auto& b) { return a.second.first < b.second.first; })
-                         ->second.first
-                  << ")\n";
+
+        auto tmp = std::min_element(contestants.begin(), contestants.end(), [](const auto& a, const auto& b) {
+                       return a.second.second < b.second.second;
+                   })->second.second;
+        std::cout << "MaxScore: " << maxScore << ", "
+                  << "old MinScore: " << minScore << " (" << (100 * minScore / maxScore) << "%), "
+                  << "new MinScore: " << tmp << " (" << (100 * tmp / maxScore) << "%), "
+                  << "MutationIntensity: " << mutationIntensity << "\n";
+
+        auto minLevel = std::min_element(knownBots.begin(), knownBots.end(), [](const auto& a, const auto& b) {
+                            return a.second.first < b.second.first;
+                        })->second.first;
+        auto maxLevel = std::max_element(knownBots.begin(), knownBots.end(), [](const auto& a, const auto& b) {
+                            return a.second.first < b.second.first;
+                        })->second.first;
+        std::cout << "Known Bots: " << knownBots.size() << " (level " << minLevel << "-" << maxLevel << ")\n";
+
         for (const auto& it : contestants) {
             std::cout << it.first << " -> (" << it.second.first << ", " << it.second.second << ")" << std::endl;
         }
