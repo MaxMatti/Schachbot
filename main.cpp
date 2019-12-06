@@ -147,7 +147,6 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     totalMoves = 0;
     int sameCounter = 0;
     std::vector<std::string> startMoves;
-    std::size_t startMovesPos = 0;
     startMoves.push_back("e2e4");
     startMoves.push_back("b1c3");
     startMoves.push_back("d2d4");
@@ -161,7 +160,6 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         auto start = std::chrono::steady_clock::now();
         totalMoves += currentBot.counter;
         currentBot.counter = 0;
-        auto timeThreshold = 0.2s;
         Move chosenMove;
         /*if (startMovesPos < startMoves.size()) {
             chosenMove = createMove(currentSituation, startMoves[startMovesPos]);

@@ -3,11 +3,16 @@
 #include <sstream>
 
 Move::Move(std::string movestr) {
-    assert(movestr.length() == 6);
+    assert(movestr.length() == 5 || movestr.length() == 6);
     moveFrom = 1ul << ((movestr[1] - 'a') + 8 * ('8' - movestr[2]));
     moveTo = 1ul << ((movestr[3] - 'a') + 8 * ('8' - movestr[4]));
     turnFrom = getPiece(movestr[0]);
-    turnTo = getPiece(movestr[5]);
+    if (movestr.length() == 5) {
+        turnTo = turnFrom;
+    }
+    else {
+        turnTo = getPiece(movestr[5]);
+    }
 }
 
 std::ostream& operator<<(std::ostream& stream, const Move& move) {
