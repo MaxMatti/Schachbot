@@ -304,7 +304,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     if (argc > 2) {
         botCacheFilename = argv[2];
     }
-    float mutationIntensity = 0.4f;
+    double mutationIntensity = 0.4;
     std::mt19937 engine;
     std::ifstream cacheFile(scoreCacheFilename);
     std::size_t winners = 10;
@@ -315,7 +315,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     std::size_t minScore = 0;
     Bot newContestant{};
     auto [knownBots, whiteMoveCache, blackMoveCache] = loadCache(botCacheFilename);
-    std::cout << "Loaded " << knownBots.size() << " known bots, "
+    std::cout << std::setprecision(3) << "Loaded " << knownBots.size() << " known bots, "
               << std::accumulate(
                      whiteMoveCache.begin(),
                      whiteMoveCache.end(),
@@ -374,6 +374,10 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                 situations.push_back(getCachedMoves(cacheFile));
             }
             maxScore = calcMaxScore(situations);
+            mutationIntensity *= 0.5;
+        }
+        else {
+            mutationIntensity = 1 - ((1 - mutationIntensity) * 0.75);
         }
         while (contestants.size() < generationSize) {
             contestants.emplace_back(
@@ -477,7 +481,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                          contestants.end(),
                          [](const auto& a, const auto& b) { return a.second.second < b.second.second; })
                          ->second.second
-                  << "\n";
+                  << ", MutationIntensity: " << mutationIntensity << "\n";
         std::cout << "Known Bots: " << knownBots.size() << " (level "
                   << std::min_element(
                          knownBots.begin(),

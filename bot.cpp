@@ -73,11 +73,11 @@ Bot::Bot() {
     weaknesses[BlackFigure] = weaknesses[WhiteFigure];
 }
 
-Bot::Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator)
+Bot::Bot(const Bot& previous, const double& mutationIntensity, std::mt19937& generator)
     : values(previous.values)
     , strengths(previous.strengths)
     , weaknesses(previous.weaknesses) {
-    std::uniform_real_distribution<float> distribution(0.0, 1.0);
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
     for (auto& i : values) {
         while (distribution(generator) < mutationIntensity) {
             i += 1;

@@ -47,7 +47,7 @@ struct Bot {
         : values(newValues)
         , strengths(newStrengths)
         , weaknesses(newWeaknesses) {}
-    Bot(const Bot& previous, const float& mutationIntensity, std::mt19937& generator);
+    Bot(const Bot& previous, const double& mutationIntensity, std::mt19937& generator);
 
     Bot(const Bot& other)
         : values(other.values)
