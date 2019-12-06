@@ -25,9 +25,9 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         }
         tournamentSize = std::stoll(argv[1], 0, 0);
     }
-    std::ifstream savefile(filename.c_str(), std::ios_base::binary);
-    if (savefile.good()) {
-        tournament.loadTournament(savefile);
+    std::ifstream iSavefile(filename.c_str(), std::ios_base::binary);
+    if (iSavefile.good()) {
+        tournament.loadTournament(iSavefile);
         std::cout << tournament;
         std::cout << tournament.extraInfo();
     }
@@ -39,16 +39,16 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
         tournament.addContestant(Bot(parent, mutationIntensity, engine));
     }
     tournament.prepareNextRound(mutationIntensity, engine, tournamentSize, tournamentSize);
-    savefile.close();
+    iSavefile.close();
     std::chrono::steady_clock::time_point startTime;
     for (std::size_t i = 0; i < tournamentLength; ++i) {
         startTime = std::chrono::steady_clock::now();
         tournament.evaluate(true);
         std::cout << "Tournament #" << (i + 1) << ": evaluated in " << getSecondsSince(startTime) << "s.\nSaving "
                   << tournament;
-        std::ofstream savefile(filename.c_str(), std::ios_base::binary);
-        tournament.saveTournament(savefile);
-        savefile.close();
+        std::ofstream oSavefile(filename.c_str(), std::ios_base::binary);
+        tournament.saveTournament(oSavefile);
+        oSavefile.close();
         tournament.prepareNextRound(mutationIntensity, engine, (tournamentSize - 1) / 2, tournamentSize - 1);
         tournament.addContestant(parent);
         while (tournament.size() < tournamentSize) {
