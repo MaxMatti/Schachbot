@@ -3,14 +3,14 @@ import os
 mainEnv = Environment(
     CC="clang",
     CXX="clang++",
-    CXXFLAGS="-std=c++2a -stdlib=libc++ -flto -Wall -Wextra -O3 -g -mtune=native -march=native -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
+    CXXFLAGS="-std=c++2a -stdlib=libc++ -flto -Wall -Wextra -Wshadow -O3 -g -mtune=native -march=native -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
     LINKFLAGS="-stdlib=libc++ -flto")
 mainEnv['ENV']['TERM'] = os.environ['TERM']
 
 fastEnv = Environment(
     CC="clang",
     CXX="clang++",
-    CXXFLAGS="-std=c++2a -stdlib=libc++ -flto -Wall -Wextra -O3 -g -mtune=skylake -march=skylake -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
+    CXXFLAGS="-std=c++2a -stdlib=libc++ -flto -Wall -Wextra -Wshadow -O3 -g -mtune=skylake -march=skylake -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
     LINKFLAGS="-stdlib=libc++ -flto -static",
     LIBS=["c++abi", "pthread"])
 fastEnv['ENV']['TERM'] = os.environ['TERM']
@@ -18,7 +18,7 @@ fastEnv['ENV']['TERM'] = os.environ['TERM']
 testEnv = Environment(
     CC="clang",
     CXX="clang++",
-    CXXFLAGS="-std=c++2a -stdlib=libc++ -Wall -Wextra -O3 -g -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
+    CXXFLAGS="-std=c++2a -stdlib=libc++ -Wall -Wextra -Wshadow -O3 -g -fno-omit-frame-pointer -ftemplate-backtrace-limit=0",
     LINKFLAGS="-stdlib=libc++",
     CPPPATH=["/usr/include/gtest"],
     LIBS=["gtest_main", "gtest"],
