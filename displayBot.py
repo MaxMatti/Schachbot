@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from math import log
 from sys import argv
 from PIL import Image, ImageDraw, ImageFont
 import pyautogui
@@ -117,6 +118,11 @@ def displayBot(bot, imageSize):
         beginOffset = valueCounter
         for j in bot[i]:
             bot[i][j] /= defaultBot[i][j]
+            base = 2
+            if bot[i][j] > base:
+                bot[i][j] = log(bot[i][j], base) * base
+            elif bot[i][j] < -base:
+                bot[i][j] = log(-bot[i][j], base) * base
             minValue = min(minValue, bot[i][j])
             maxValue = max(maxValue, bot[i][j])
             numberSize = draw.textsize("{:.1f}".format(bot[i][j]), font=testFont)
