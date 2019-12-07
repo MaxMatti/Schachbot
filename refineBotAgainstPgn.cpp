@@ -178,10 +178,44 @@ void printColNumbers(std::size_t generationSize) {
 }
 
 void saveCache(
-    std::map<Bot, std::pair<std::size_t, std::size_t>> knownBots,
-    std::map<Bot, std::map<Board<true>, Move>> whiteMoveCache,
-    std::map<Bot, std::map<Board<false>, Move>> blackMoveCache,
+    std::map<Bot, std::pair<std::size_t, std::size_t>>& knownBots,
+    std::map<Bot, std::map<Board<true>, Move>>& whiteMoveCache,
+    std::map<Bot, std::map<Board<false>, Move>>& blackMoveCache,
     const std::string& filename) {
+
+    auto beforeSize = knownBots.size();
+    auto maxScore = std::max_element(knownBots.begin(), knownBots.end(), [](auto a, auto b) {
+                        return a.second.second < b.second.second;
+                    })->second.second;
+    for (auto it = knownBots.begin(); it != knownBots.end();) {
+        if (it->second.second * 5 < maxScore) {
+            whiteMoveCache.erase(it->first);
+            blackMoveCache.erase(it->first);
+            it = knownBots.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+    for (auto it = whiteMoveCache.begin(); it != whiteMoveCache.end();) {
+        if (knownBots.count(it->first)) {
+            ++it;
+        }
+        else {
+            it = whiteMoveCache.erase(it);
+        }
+    }
+    for (auto it = blackMoveCache.begin(); it != blackMoveCache.end();) {
+        if (knownBots.count(it->first)) {
+            ++it;
+        }
+        else {
+            it = blackMoveCache.erase(it);
+        }
+    }
+    if (knownBots.size() < beforeSize) {
+        std::cout << "Pruning known bots: " << beforeSize << " -> " << knownBots.size() << std::endl;
+    }
 
     std::ofstream out(filename.c_str(), std::ios_base::binary);
 
@@ -336,7 +370,6 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     }
     maxScore = calcMaxScore(situations);
     while (true) {
-        printColNumbers(generationSize);
         for (const auto& it : contestants) {
             if (knownBots.count(it.first)) {
                 auto& knownPos = knownBots.at(it.first);
@@ -421,6 +454,9 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                         currentGen.push_back(it.first);
                     }
                 }
+            }
+            if (i % lineIncrement == 0) {
+                printColNumbers(generationSize);
             }
             if (currentGen.size() > 0) {
                 auto cont = contestants.begin();
