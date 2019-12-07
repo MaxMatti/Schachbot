@@ -181,6 +181,8 @@ void saveCache(
     std::map<Bot, std::pair<std::size_t, std::size_t>>& knownBots,
     std::map<Bot, std::map<Board<true>, Move>>& whiteMoveCache,
     std::map<Bot, std::map<Board<false>, Move>>& blackMoveCache,
+    std::size_t startLines,
+    double mutationIntensity,
     const std::string& filename) {
 
     auto beforeSize = knownBots.size();
@@ -250,19 +252,27 @@ void saveCache(
         }
     }
     out.write("====", 4);
+    out.write(reinterpret_cast<const char*>(&startLines), sizeof(startLines));
+    out.write("====", 4);
+    out.write(reinterpret_cast<const char*>(&mutationIntensity), sizeof(mutationIntensity));
+    out.write("====", 4);
     out.close();
 }
 
 auto loadCache(const std::string& filename) -> std::tuple<
     std::map<Bot, std::pair<std::size_t, std::size_t>>,
     std::map<Bot, std::map<Board<true>, Move>>,
-    std::map<Bot, std::map<Board<false>, Move>>> {
+    std::map<Bot, std::map<Board<false>, Move>>,
+    std::size_t,
+    double> {
 
     std::ifstream in(filename.c_str(), std::ios_base::binary);
 
     std::map<Bot, std::pair<std::size_t, std::size_t>> knownBots;
     std::map<Bot, std::map<Board<true>, Move>> whiteMoveCache;
     std::map<Bot, std::map<Board<false>, Move>> blackMoveCache;
+    std::size_t startLines = 10ul;
+    double mutationIntensity = 0.4;
     // TODO(mstaff): error handling
     auto vecSize = knownBots.size();
     in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
@@ -275,11 +285,15 @@ auto loadCache(const std::string& filename) -> std::tuple<
     }
     std::string divider = "0000";
     in.read(divider.data(), 4);
-    if (divider != "====") {
+    if (in.eof() || divider != "====") {
         knownBots.clear();
         whiteMoveCache.clear();
         blackMoveCache.clear();
-        return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+        std::cout << "Could not read persistence file.\nStart lines: ";
+        std::cin >> startLines;
+        std::cout << "Mutation intensity: ";
+        std::cin >> mutationIntensity;
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache, startLines, mutationIntensity};
     }
     vecSize = whiteMoveCache.size();
     in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
@@ -298,10 +312,14 @@ auto loadCache(const std::string& filename) -> std::tuple<
     }
     divider = "0000";
     in.read(divider.data(), 4);
-    if (divider != "====") {
+    if (in.eof() || divider != "====") {
         whiteMoveCache.clear();
         blackMoveCache.clear();
-        return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+        std::cout << "Could not read persistence file.\nStart lines: ";
+        std::cin >> startLines;
+        std::cout << "Mutation intensity: ";
+        std::cin >> mutationIntensity;
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache, startLines, mutationIntensity};
     }
     vecSize = blackMoveCache.size();
     in.read(reinterpret_cast<char*>(&vecSize), sizeof(vecSize));
@@ -320,13 +338,36 @@ auto loadCache(const std::string& filename) -> std::tuple<
     }
     divider = "0000";
     in.read(divider.data(), 4);
-    if (divider != "====") {
-        whiteMoveCache.clear();
+    if (in.eof() || divider != "====") {
         blackMoveCache.clear();
-        return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+        std::cout << "Could not read persistence file.\nStart lines: ";
+        std::cin >> startLines;
+        std::cout << "Mutation intensity: ";
+        std::cin >> mutationIntensity;
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache, startLines, mutationIntensity};
+    }
+    in.read(reinterpret_cast<char*>(&startLines), sizeof(startLines));
+    divider = "0000";
+    in.read(divider.data(), 4);
+    if (in.eof() || divider != "====") {
+        std::cout << "Could not read persistence file.\nStart lines: ";
+        std::cin >> startLines;
+        std::cout << "Mutation intensity: ";
+        std::cin >> mutationIntensity;
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache, startLines, mutationIntensity};
+    }
+    in.read(reinterpret_cast<char*>(&mutationIntensity), sizeof(mutationIntensity));
+    divider = "0000";
+    in.read(divider.data(), 4);
+    if (in.eof() || divider != "====") {
+        std::cout << "Could not read persistence file.\nStart lines: ";
+        std::cin >> startLines;
+        std::cout << "Mutation intensity: ";
+        std::cin >> mutationIntensity;
+        return std::tuple{knownBots, whiteMoveCache, blackMoveCache, startLines, mutationIntensity};
     }
     in.close();
-    return std::tuple{knownBots, whiteMoveCache, blackMoveCache};
+    return std::tuple{knownBots, whiteMoveCache, blackMoveCache, startLines, mutationIntensity};
 }
 
 int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
@@ -338,30 +379,30 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
     if (argc > 2) {
         botCacheFilename = argv[2];
     }
-    double mutationIntensity = 0.4;
     std::mt19937 engine;
     std::ifstream cacheFile(scoreCacheFilename);
     std::size_t winners = 10;
     std::size_t generationSize = 40;
-    std::size_t startLines = 10;
     std::size_t lineIncrement = 10;
     std::size_t maxScore = 1;
     std::size_t minScore = 0;
     Bot newContestant{};
-    auto [knownBots, whiteMoveCache, blackMoveCache] = loadCache(botCacheFilename);
-    std::cout << std::setprecision(3) << "Loaded " << knownBots.size() << " known bots, "
-              << std::accumulate(
-                     whiteMoveCache.begin(),
-                     whiteMoveCache.end(),
-                     0ul,
-                     [](const auto& sum, const auto& elem) { return sum + elem.second.size(); })
-              << " white moves, "
-              << std::accumulate(
-                     blackMoveCache.begin(),
-                     blackMoveCache.end(),
-                     0ul,
-                     [](const auto& sum, const auto& elem) { return sum + elem.second.size(); })
-              << " black moves." << std::endl;
+    auto [knownBots, whiteMoveCache, blackMoveCache, startLines, mutationIntensity] = loadCache(botCacheFilename);
+    {
+        auto whiteMoveCount =
+            std::accumulate(whiteMoveCache.begin(), whiteMoveCache.end(), 0ul, [](const auto& sum, const auto& elem) {
+                return sum + elem.second.size();
+            });
+        auto blackMoveCount =
+            std::accumulate(blackMoveCache.begin(), blackMoveCache.end(), 0ul, [](const auto& sum, const auto& elem) {
+                return sum + elem.second.size();
+            });
+        std::cout << std::setprecision(3) << "Known bots: " << knownBots.size() << ", "
+                  << "White moves: " << whiteMoveCount << ", "
+                  << "Black moves: " << blackMoveCount << ", "
+                  << "Start lines: " << startLines << ", "
+                  << "Mutation intensity: " << mutationIntensity << "." << std::endl;
+    }
     std::vector<std::pair<Bot, std::pair<std::size_t, std::size_t>>> contestants;
     std::vector<std::tuple<Board<true>, MoveCache, MoveCache>> situations;
     situations.reserve(startLines + 10 * lineIncrement);
@@ -381,7 +422,7 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                 knownBots.insert(it);
             }
         }
-        saveCache(knownBots, whiteMoveCache, blackMoveCache, botCacheFilename);
+        saveCache(knownBots, whiteMoveCache, blackMoveCache, situations.size(), mutationIntensity, botCacheFilename);
         contestants.resize(0);
         contestants.reserve(knownBots.size());
         std::copy(knownBots.begin(), knownBots.end(), std::back_inserter(contestants));
@@ -515,7 +556,8 @@ int main(int argc [[maybe_unused]], char const* argv [[maybe_unused]][]) {
                     cont->second.first = i + 1;
                 }
             }
-            saveCache(knownBots, whiteMoveCache, blackMoveCache, botCacheFilename);
+            saveCache(
+                knownBots, whiteMoveCache, blackMoveCache, situations.size(), mutationIntensity, botCacheFilename);
         }
 
         auto tmp = std::min_element(contestants.begin(), contestants.end(), [](const auto& a, const auto& b) {
